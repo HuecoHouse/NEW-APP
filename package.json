@@ -4,6 +4,7 @@
   "description": "Static web app for rebranding PDF documents by swapping company names and logos.",
   "private": true,
   "scripts": {
-    "start": "npx serve ."
+    "start": "npx serve .",
+    "build": "node scripts/build-docs.mjs"
   }
 }

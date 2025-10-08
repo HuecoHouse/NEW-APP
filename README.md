@@ -18,8 +18,12 @@ You can deploy the site anywhere that serves static files. A few popular choices
 
 ### GitHub Pages
 1. Push this repository to GitHub.
-2. In the repository settings, enable GitHub Pages and choose the `main` branch root.
-3. GitHub will build the static site for you and provide a `https://<username>.github.io/<repo>/` URL.
+2. Run `npm run build` (or `node scripts/build-docs.mjs`) to copy the latest assets into the `docs/` folder that GitHub Pages can serve.
+3. Commit the generated `docs/` files.
+4. In the repository settings, enable GitHub Pages and choose the `main` branch `docs/` folder as the publishing source.
+5. GitHub will publish the static site at `https://<username>.github.io/<repo>/`.
+
+> **Tip:** If you prefer to publish directly from the repository root instead of `docs/`, change the Pages source accordingly and skip step 2—the same files at the project root work either way.
 
 ### Netlify
 1. Create a new Netlify site and connect it to your GitHub repository, or drag-and-drop the project folder into Netlify Drop.
@@ -32,6 +36,10 @@ You can deploy the site anywhere that serves static files. A few popular choices
 3. Deploy to get a live preview link and optional production domain.
 
 Any static hosting provider (e.g., Cloudflare Pages, AWS S3 + CloudFront) works as long as it can serve the files in this repository.
+
+## Troubleshooting
+
+- **Seeing “File not found” on GitHub Pages?** Ensure the Pages source is set to the `docs/` folder (after running `npm run build`) or to the repository root. The published URL will be `https://<username>.github.io/<repo>/`. Visiting the domain root (`https://<username>.github.io/`) without the repo name will result in a 404.
 
 ## Notes
 
