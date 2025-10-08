@@ -13,6 +13,9 @@
     const downloadLink = document.getElementById('download-link');
     const detectedBrand = document.getElementById('detected-brand');
     const detectedBrandValue = document.getElementById('detected-brand-value');
+    const manualBrandGroup = document.getElementById('manual-brand');
+    const manualBrandInput = document.getElementById('manual-brand-input');
+    const manualBrandHint = manualBrandGroup ? manualBrandGroup.querySelector('.form__hint') : null;
 
     if (!newNameInput) {
       throw new Error('Missing the “New Company Name” field in the interface.');
@@ -23,6 +26,7 @@
     let cachedDetectedName = null;
     let detectionRequestId = 0;
 
+    hideManualBrandInput();
     setDetectionState('idle', 'Select a PDF to begin.');
 
     pdfInput.addEventListener('change', () => {
@@ -32,6 +36,7 @@
       cachedPdfBuffer = null;
       cachedPdfSignature = null;
       cachedDetectedName = null;
+      hideManualBrandInput();
 
       if (!pdfInput.files.length) {
         setDetectionState('idle', 'Select a PDF to begin.');
@@ -60,9 +65,11 @@
 
           cachedDetectedName = detectedName || null;
           if (detectedName) {
+            hideManualBrandInput();
             setDetectionState('success', detectedName);
           } else {
-            setDetectionState('error', 'We couldn’t identify a consistent company name in this PDF.');
+            setDetectionState('error', 'We couldn’t identify a consistent company name in this PDF. Enter it below.');
+            showManualBrandInput('We couldn’t detect the original brand. Enter it below to continue.');
           }
         })
         .catch((error) => {
@@ -126,17 +133,27 @@
         updateStatus();
 
         let currentName = cachedDetectedName;
+        if (!currentName && manualBrandInput) {
+          const manualValue = manualBrandInput.value.trim();
+          if (manualValue) {
+            currentName = manualValue;
+            cachedDetectedName = manualValue;
+          }
+        }
+
         if (!currentName) {
           currentName = detectCompanyName({ pdfDoc });
           cachedDetectedName = currentName || null;
         }
 
         if (!currentName) {
-          setDetectionState('error', 'We couldn’t identify a consistent company name in this PDF.');
-          throw new Error('Unable to detect the existing company name. Make sure the brand appears consistently in the document.');
+          setDetectionState('error', 'We couldn’t identify a consistent company name in this PDF. Enter it below.');
+          showManualBrandInput('Enter the original company name so we can update it throughout the document.');
+          throw new Error('Unable to detect the existing company name. Enter it manually when prompted.');
         }
 
         setDetectionState('success', currentName);
+        hideManualBrandInput();
         messages.push(`Detected existing company name: "${currentName}".`);
         updateStatus();
 
@@ -181,6 +198,37 @@
         updateStatus();
       }
     });
+
+    function showManualBrandInput(message) {
+      if (!manualBrandGroup || !manualBrandInput) {
+        return;
+      }
+      manualBrandGroup.hidden = false;
+      manualBrandInput.required = true;
+      if (message && manualBrandHint) {
+        manualBrandHint.textContent = message;
+      } else if (manualBrandHint) {
+        manualBrandHint.textContent = 'We couldn’t detect the original brand. Provide it manually to continue.';
+      }
+      const focusField = () => manualBrandInput.focus();
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(focusField);
+      } else {
+        setTimeout(focusField, 0);
+      }
+    }
+
+    function hideManualBrandInput() {
+      if (!manualBrandGroup || !manualBrandInput) {
+        return;
+      }
+      manualBrandGroup.hidden = true;
+      manualBrandInput.required = false;
+      manualBrandInput.value = '';
+      if (manualBrandHint) {
+        manualBrandHint.textContent = 'We couldn’t detect the original brand. Provide it manually to continue.';
+      }
+    }
 
     function setDetectionState(state, message) {
       if (!detectedBrand || !detectedBrandValue) {

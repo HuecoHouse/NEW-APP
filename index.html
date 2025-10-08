@@ -49,7 +49,7 @@
     <header class="app__header">
       <div class="app__topline">
         <h1>Rebrand PDF</h1>
-        <span class="app__revision" aria-label="Revision number">Rev 1.3</span>
+        <span class="app__revision" aria-label="Revision number">Rev 1.4</span>
       </div>
       <p>Swap an existing brand name and logo throughout a PDF with your updated identity.</p>
       <p id="pdf-lib-error" class="app__notice" role="alert" hidden>
@@ -67,6 +67,12 @@
         <span class="form__detected-label">Detected brand</span>
         <span class="form__detected-value" id="detected-brand-value">Select a PDF to begin.</span>
       </div>
+
+      <section id="manual-brand" class="form__group form__group--manual" hidden>
+        <label for="manual-brand-input">Current Company Name</label>
+        <input type="text" id="manual-brand-input" placeholder="Enter the existing company name" autocomplete="organization" />
+        <p class="form__hint">We couldn’t detect the original brand. Provide it manually to continue.</p>
+      </section>
 
       <section class="form__group">
         <label for="new-name">New Company Name</label>
