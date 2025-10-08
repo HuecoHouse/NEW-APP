@@ -39,30 +39,35 @@ form.addEventListener('submit', async (event) => {
     messages.push('Reading PDF document…');
     updateStatus();
     const pdfBuffer = await readFileAsArrayBuffer(pdfInput.files[0]);
-    let pdfBinary = arrayBufferToBinaryString(pdfBuffer);
 
     messages.push(`Replacing company name "${oldName}" with "${newName}"…`);
-    updateStatus();
-    const { binary: renamedBinary, replacements } = replaceCompanyName(pdfBinary, oldName, newName);
-    pdfBinary = renamedBinary;
-    messages.push(replacements
-      ? `Updated ${replacements} occurrence${replacements === 1 ? '' : 's'} of the company name.`
-      : 'No occurrences of the current company name were found in the document.');
     updateStatus();
 
     messages.push('Preparing logo replacement…');
     updateStatus();
     const logoBuffer = await readFileAsArrayBuffer(logoInput.files[0]);
-    const logoBinary = arrayBufferToBinaryString(logoBuffer);
 
-    const { binary: withLogoBinary, replaced } = replaceFirstImage(pdfBinary, logoBinary);
-    pdfBinary = withLogoBinary;
+    const {
+      pdfBytes,
+      replacements,
+      imageReplaced
+    } = await rebrandPdf({
+      pdfBuffer,
+      logoBuffer,
+      currentName: oldName,
+      newName,
+      logoMimeType: logoInput.files[0].type
+    });
 
-    messages.push(replaced ? 'Replaced the first detected logo image in the PDF.' : 'No embedded images were replaced.');
+    messages.push(replacements
+      ? `Updated ${replacements} occurrence${replacements === 1 ? '' : 's'} of the company name.`
+      : 'No occurrences of the current company name were found in the document.');
     updateStatus();
 
-    const updatedBytes = binaryStringToUint8Array(pdfBinary);
-    const blob = new Blob([updatedBytes], { type: 'application/pdf' });
+    messages.push(imageReplaced ? 'Replaced the first detected logo image in the PDF.' : 'No embedded images were replaced.');
+    updateStatus();
+
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const objectUrl = URL.createObjectURL(blob);
 
     downloadLink.href = objectUrl;
@@ -99,102 +104,177 @@ function readFileAsArrayBuffer(file) {
   });
 }
 
-function arrayBufferToBinaryString(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000;
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode.apply(null, chunk);
-  }
-  return binary;
+function buildDownloadName(originalName, brandName) {
+  const base = originalName.replace(/\.pdf$/i, '');
+  const sanitizedBrand = brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return `${base}-${sanitizedBrand || 'rebranded'}.pdf`;
 }
 
-function binaryStringToUint8Array(binary) {
-  const length = binary.length;
-  const bytes = new Uint8Array(length);
-  for (let i = 0; i < length; i += 1) {
-    bytes[i] = binary.charCodeAt(i) & 0xff;
+async function rebrandPdf({ pdfBuffer, logoBuffer, currentName, newName, logoMimeType }) {
+  if (typeof PDFLib === 'undefined') {
+    throw new Error('The PDF processing tools failed to load. Please refresh the page and try again.');
   }
-  return bytes;
+
+  const pdfBytes = new Uint8Array(pdfBuffer);
+  const logoBytes = new Uint8Array(logoBuffer);
+  const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+
+  const replacements = replaceContentStreams({ pdfDoc, currentName, newName });
+  const imageReplaced = await replaceFirstImageStream({ pdfDoc, logoBytes, logoMimeType });
+  const updatedPdfBytes = await pdfDoc.save();
+
+  return {
+    pdfBytes: updatedPdfBytes,
+    replacements,
+    imageReplaced
+  };
 }
 
-function replaceCompanyName(pdfBinary, currentName, newName) {
+function replaceContentStreams({ pdfDoc, currentName, newName }) {
   const escaped = escapeRegExp(currentName);
-  const regex = new RegExp(escaped, 'g');
-  const matches = pdfBinary.match(regex);
-  const replacements = matches ? matches.length : 0;
-  const binary = pdfBinary.replace(regex, newName);
-  return { binary, replacements };
+  const searchPattern = new RegExp(escaped, 'g');
+  const decoder = new TextDecoder('utf-8');
+  const encoder = new TextEncoder();
+  let totalReplacements = 0;
+
+  for (const [ref, object] of pdfDoc.context.enumerateIndirectObjects()) {
+    if (!(object instanceof PDFLib.PDFStream)) {
+      continue;
+    }
+
+    const subtype = object.dict.get(PDFLib.PDFName.of('Subtype'));
+    if (subtype && subtype.toString() === '/Image') {
+      continue;
+    }
+
+    let decoded;
+    try {
+      decoded = object.decode();
+    } catch (error) {
+      continue;
+    }
+
+    let text;
+    try {
+      text = decoder.decode(decoded);
+    } catch (error) {
+      continue;
+    }
+
+    const matches = text.match(searchPattern);
+    if (!matches) {
+      searchPattern.lastIndex = 0;
+      continue;
+    }
+
+    totalReplacements += matches.length;
+    const updatedText = text.replace(searchPattern, newName);
+    searchPattern.lastIndex = 0;
+    const encoded = encoder.encode(updatedText);
+    const stream = createRawStream({ context: pdfDoc.context, template: object, contents: encoded, removeFilters: true });
+    pdfDoc.context.assign(ref, stream);
+  }
+
+  return totalReplacements;
+}
+
+async function replaceFirstImageStream({ pdfDoc, logoBytes, logoMimeType }) {
+  const embeddedLogo = await embedLogo({ pdfDoc, logoBytes, logoMimeType });
+  if (!embeddedLogo) {
+    return false;
+  }
+
+  const { stream: logoStream, ref: logoRef } = embeddedLogo;
+  const logoContents = extractStreamContents(logoStream);
+  const logoTemplate = createRawStream({ context: pdfDoc.context, template: logoStream, contents: logoContents });
+  let replaced = false;
+
+  for (const [ref, object] of pdfDoc.context.enumerateIndirectObjects()) {
+    if (!(object instanceof PDFLib.PDFStream)) {
+      continue;
+    }
+
+    const subtype = object.dict.get(PDFLib.PDFName.of('Subtype'));
+    if (subtype && subtype.toString() === '/Image') {
+      pdfDoc.context.assign(ref, logoTemplate);
+      replaced = true;
+      break;
+    }
+  }
+
+  pdfDoc.context.delete(logoRef);
+  return replaced;
+}
+
+async function embedLogo({ pdfDoc, logoBytes, logoMimeType }) {
+  try {
+    const mimeType = normalizeMimeType(logoMimeType);
+    let image;
+    if (mimeType === 'image/png') {
+      image = await pdfDoc.embedPng(logoBytes);
+    } else {
+      image = await pdfDoc.embedJpg(logoBytes);
+    }
+
+    const stream = pdfDoc.context.lookup(image.ref);
+    if (!(stream instanceof PDFLib.PDFStream)) {
+      return null;
+    }
+
+    return {
+      ref: image.ref,
+      stream
+    };
+  } catch (error) {
+    console.error(error);
+    throw new Error('Unable to process the uploaded logo image.');
+  }
+}
+
+function normalizeMimeType(type) {
+  if (type === 'image/png' || type === 'image/jpeg') {
+    return type;
+  }
+  if (type === 'image/jpg') {
+    return 'image/jpeg';
+  }
+  return 'image/png';
+}
+
+function createRawStream({ context, template, contents, removeFilters = false }) {
+  const normalizedContents = toUint8Array(contents);
+  const dict = template.dict.clone(context);
+  dict.set(PDFLib.PDFName.of('Length'), PDFLib.PDFNumber.of(normalizedContents.length));
+  if (removeFilters) {
+    dict.delete(PDFLib.PDFName.of('Filter'));
+    dict.delete(PDFLib.PDFName.of('DecodeParms'));
+  }
+  return PDFLib.PDFRawStream.of(dict, normalizedContents);
 }
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function replaceFirstImage(pdfBinary, newImageBinary) {
-  const marker = '/Subtype /Image';
-  const imageIndex = pdfBinary.indexOf(marker);
-  if (imageIndex === -1) {
-    return { binary: pdfBinary, replaced: false };
+function extractStreamContents(stream) {
+  if (stream && typeof stream.getContents === 'function') {
+    return stream.getContents();
   }
-
-  const streamIndex = pdfBinary.indexOf('stream', imageIndex);
-  const endstreamIndex = pdfBinary.indexOf('endstream', streamIndex);
-
-  if (streamIndex === -1 || endstreamIndex === -1) {
-    return { binary: pdfBinary, replaced: false };
+  if (stream && stream.contents) {
+    return stream.contents;
   }
-
-  const streamLineBreakIndex = pdfBinary.indexOf('\n', streamIndex);
-  if (streamLineBreakIndex === -1) {
-    return { binary: pdfBinary, replaced: false };
-  }
-
-  let dataStart = streamLineBreakIndex + 1;
-  if (pdfBinary.charCodeAt(streamLineBreakIndex - 1) === 13) {
-    // Handles CRLF sequences
-    dataStart = streamLineBreakIndex + 1;
-  }
-
-  const objectStartIndex = findObjectStart(pdfBinary, imageIndex);
-  if (objectStartIndex === -1) {
-    return { binary: pdfBinary, replaced: false };
-  }
-
-  const header = pdfBinary.slice(objectStartIndex, dataStart);
-  const lengthMatch = header.match(/\/Length\s+(\d+)/);
-  if (!lengthMatch) {
-    return { binary: pdfBinary, replaced: false };
-  }
-
-  const beforeObject = pdfBinary.slice(0, objectStartIndex);
-  const afterStream = pdfBinary.slice(endstreamIndex);
-  const newlineSequence = header.endsWith('\r\n') ? '\r\n' : '\n';
-  const updatedHeader = header.replace(/\/Length\s+\d+/, `/Length ${newImageBinary.length}`);
-  const updatedBinary = beforeObject + updatedHeader + newImageBinary + newlineSequence + afterStream;
-  return { binary: updatedBinary, replaced: true };
+  return new Uint8Array();
 }
 
-function findObjectStart(pdfBinary, fromIndex) {
-  let searchIndex = fromIndex;
-  while (searchIndex > 0) {
-    const objIndex = pdfBinary.lastIndexOf('obj', searchIndex);
-    if (objIndex === -1) {
-      return -1;
-    }
-    const whitespace = pdfBinary.slice(objIndex - 10, objIndex);
-    if (/\d+\s+\d+\s+$/.test(whitespace)) {
-      const lineStart = pdfBinary.lastIndexOf('\n', objIndex);
-      return lineStart === -1 ? 0 : lineStart + 1;
-    }
-    searchIndex = objIndex - 3;
+function toUint8Array(value) {
+  if (value instanceof Uint8Array) {
+    return value;
   }
-  return -1;
-}
-
-function buildDownloadName(originalName, brandName) {
-  const base = originalName.replace(/\.pdf$/i, '');
-  const sanitizedBrand = brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  return `${base}-${sanitizedBrand || 'rebranded'}.pdf`;
+  if (value instanceof ArrayBuffer) {
+    return new Uint8Array(value);
+  }
+  if (ArrayBuffer.isView(value)) {
+    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  }
+  return new Uint8Array();
 }

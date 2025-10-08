@@ -36,3 +36,5 @@ Any static hosting provider (e.g., Cloudflare Pages, AWS S3 + CloudFront) works 
 ## Notes
 
 The in-browser PDF manipulation relies on the client device for processing, so hosting only needs to deliver the static assets—no server-side code is required.
+
+The interface loads [`pdf-lib`](https://github.com/Hopding/pdf-lib) from a CDN at runtime. If you plan to run the site without internet access, download that script locally and update `index.html` to point to your copy.
