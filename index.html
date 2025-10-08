@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rebrand PDF</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" integrity="sha384-0l9KoU3zD+8eUjl/cQisVIt9uZT5vK8w4bJiYVkQglNgB+M6KsOEKLUWwPRwZjlS" crossorigin="anonymous"></script>
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <div class="app__topline">
+        <h1>Rebrand PDF</h1>
+        <span class="app__revision" aria-label="Revision number">Rev 1.1</span>
+      </div>
+      <p>Swap an existing brand name and logo throughout a PDF with your updated identity.</p>
+    </header>
+
+    <form id="rebrand-form" class="form">
+      <section class="form__group">
+        <label for="pdf-input">Source PDF</label>
+        <input type="file" id="pdf-input" accept="application/pdf" required />
+      </section>
+
+      <section class="form__split">
+        <div class="form__group">
+          <label for="current-name">Current Company Name</label>
+          <input type="text" id="current-name" placeholder="e.g. Old Brand Co." required />
+        </div>
+        <div class="form__group">
+          <label for="new-name">New Company Name</label>
+          <input type="text" id="new-name" placeholder="e.g. New Brand Labs" required />
+        </div>
+      </section>
+
+      <section class="form__group">
+        <label for="logo-input">Replacement Logo</label>
+        <input type="file" id="logo-input" accept="image/*" required />
+        <p class="form__hint">Upload a PNG or JPEG. The first logo image found in the PDF will be replaced.</p>
+      </section>
+
+      <button type="submit" class="form__submit">Generate Updated PDF</button>
+    </form>
+
+    <section id="status" class="status" aria-live="polite"></section>
+
+    <section id="download-area" class="download" hidden>
+      <h2>Download</h2>
+      <a id="download-link" class="download__button" download="rebranded.pdf">Save Rebranded PDF</a>
+    </section>
+  </main>
+</body>
+</html>

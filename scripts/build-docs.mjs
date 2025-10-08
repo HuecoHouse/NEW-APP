@@ -1,0 +1,40 @@
+import { mkdir, readFile, writeFile, copyFile } from 'fs/promises';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const projectRoot = join(__dirname, '..');
+const docsDir = join(projectRoot, 'docs');
+
+const filesToCopy = ['index.html', 'styles.css', 'script.js'];
+
+async function ensureDocsDir() {
+  await mkdir(docsDir, { recursive: true });
+}
+
+async function copyFileWithUpdates(file) {
+  const sourcePath = join(projectRoot, file);
+  const targetPath = join(docsDir, file);
+  await mkdir(dirname(targetPath), { recursive: true });
+
+  if (file === 'index.html') {
+    const html = await readFile(sourcePath, 'utf8');
+    const updated = html.replace(/<link rel="stylesheet" href="styles.css" \/>/, '<link rel="stylesheet" href="./styles.css" />')
+      .replace(/<script defer src="script.js"><\/script>/, '<script defer src="./script.js"></script>');
+    await writeFile(targetPath, updated, 'utf8');
+  } else {
+    await copyFile(sourcePath, targetPath);
+  }
+}
+
+async function main() {
+  await ensureDocsDir();
+  await Promise.all(filesToCopy.map(copyFileWithUpdates));
+  console.log(`Copied ${filesToCopy.length} assets into docs/ for GitHub Pages.`);
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
