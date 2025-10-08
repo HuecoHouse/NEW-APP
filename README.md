@@ -1,6 +1,7 @@
 # New PDF App
 
 This project is a static web application that lets you upload a PDF, automatically detect the existing company name, provide a replacement name and logo, and download the rebranded result.
+This project is a static web application that lets you upload a PDF, specify the current and replacement company names, provide a new logo, and download the rebranded result.
 
 ## Local Development
 
@@ -48,3 +49,4 @@ Any static hosting provider (e.g., Cloudflare Pages, AWS S3 + CloudFront) works 
 The in-browser PDF manipulation relies on the client device for processing, so hosting only needs to deliver the static assets—no server-side code is required.
 
 The interface loads [`pdf-lib`](https://github.com/Hopding/pdf-lib) from a CDN at runtime. The loader tries jsDelivr first and falls back to unpkg; if you plan to run the site without internet access, download `pdf-lib.min.js` and update `index.html` (and `docs/index.html`) to point to your copy.
+The interface loads [`pdf-lib`](https://github.com/Hopding/pdf-lib) from a CDN at runtime. If you plan to run the site without internet access, download that script locally and update `index.html` to point to your copy.

@@ -42,6 +42,7 @@
       });
     }());
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" integrity="sha384-0l9KoU3zD+8eUjl/cQisVIt9uZT5vK8w4bJiYVkQglNgB+M6KsOEKLUWwPRwZjlS" crossorigin="anonymous"></script>
   <script defer src="./script.js"></script>
 </head>
 <body>
@@ -55,6 +56,9 @@
       <p id="pdf-lib-error" class="app__notice" role="alert" hidden>
         We couldn’t load the PDF processing tools. Check your connection and refresh the page to try again.
       </p>
+        <span class="app__revision" aria-label="Revision number">Rev 1.1</span>
+      </div>
+      <p>Swap an existing brand name and logo throughout a PDF with your updated identity.</p>
     </header>
 
     <form id="rebrand-form" class="form">
@@ -77,6 +81,15 @@
       <section class="form__group">
         <label for="new-name">New Company Name</label>
         <input type="text" id="new-name" placeholder="e.g. Dynamic Metals" required />
+      <section class="form__split">
+        <div class="form__group">
+          <label for="current-name">Current Company Name</label>
+          <input type="text" id="current-name" placeholder="e.g. Old Brand Co." required />
+        </div>
+        <div class="form__group">
+          <label for="new-name">New Company Name</label>
+          <input type="text" id="new-name" placeholder="e.g. New Brand Labs" required />
+        </div>
       </section>
 
       <section class="form__group">
