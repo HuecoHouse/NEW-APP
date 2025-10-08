@@ -4,13 +4,19 @@
   const initialize = () => {
     const form = document.getElementById('rebrand-form');
     const pdfInput = document.getElementById('pdf-input');
-    const newNameInput = document.getElementById('new-name');
+    const newNameInput =
+      document.getElementById('new-name') ||
+      document.querySelector('input[name="new-name"], input[data-role="new-name"], input[type="text"]');
     const logoInput = document.getElementById('logo-input');
     const statusPanel = document.getElementById('status');
     const downloadArea = document.getElementById('download-area');
     const downloadLink = document.getElementById('download-link');
     const detectedBrand = document.getElementById('detected-brand');
     const detectedBrandValue = document.getElementById('detected-brand-value');
+
+    if (!newNameInput) {
+      throw new Error('Missing the “New Company Name” field in the interface.');
+    }
 
     let cachedPdfBuffer = null;
     let cachedPdfSignature = null;
