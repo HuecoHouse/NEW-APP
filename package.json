@@ -1,0 +1,9 @@
+{
+  "name": "new-pdf-app",
+  "version": "1.0.0",
+  "description": "Static web app for rebranding PDF documents by swapping company names and logos.",
+  "private": true,
+  "scripts": {
+    "start": "npx serve ."
+  }
+}
