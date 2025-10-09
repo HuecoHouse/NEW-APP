@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brand Vision Studio</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script defer src="./script.js"></script>
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <div class="app__topline">
+        <h1>Brand Vision Studio</h1>
+        <span class="app__revision" aria-label="Revision number">Rev 2.3</span>
+      </div>
+      <p>
+        Drop in a website URL and let the AI studio surface a complete brand system—colors, fonts, assets,
+        and messaging—ready for you to refine and regenerate.
+      </p>
+      <p id="toolkit-error" class="app__notice" role="alert" hidden>
+        We couldn’t analyze that site automatically. Double-check the URL or use a CORS-friendly proxy before trying again.
+      </p>
+    </header>
+
+    <div class="workspace">
+      <form id="analyze-form" class="panel panel--input">
+        <div class="panel__header">
+          <h2>Source</h2>
+          <p>Provide a public URL to inspire the AI-driven brand analysis.</p>
+        </div>
+
+        <label class="field" for="url-input">
+          <span>Website URL</span>
+          <input type="url" id="url-input" name="url" placeholder="https://example.com" required autocomplete="url" />
+        </label>
+
+        <div class="field field--inline">
+          <label class="toggle" for="include-assets">
+            <input type="checkbox" id="include-assets" name="includeAssets" checked />
+            <span>Generate asset concepts</span>
+          </label>
+          <label class="toggle" for="include-voice">
+            <input type="checkbox" id="include-voice" name="includeVoice" checked />
+            <span>Include brand voice</span>
+          </label>
+        </div>
+
+        <button type="submit" class="button button--primary">Generate Brand System</button>
+        <p id="status" class="panel__status" aria-live="polite"></p>
+      </form>
+
+      <section id="analysis" class="panel panel--results" hidden>
+        <div class="panel__header">
+          <h2>Brand System</h2>
+          <p id="analysis-subtitle">Results generated with contextual AI heuristics.</p>
+        </div>
+        <div id="analysis-content" class="results"></div>
+      </section>
+    </div>
+  </main>
+  <aside class="floating-player" id="floating-player" hidden>
+    <button class="floating-player__collapse" id="player-collapse" aria-expanded="true" type="button">
+      <span aria-hidden="true">Soundtrack</span>
+      <span class="sr-only">Toggle soundtrack player</span>
+    </button>
+    <div class="floating-player__body">
+      <div class="floating-player__now">
+        <p class="floating-player__label">Brand soundtrack</p>
+        <h3 class="floating-player__title" id="player-title">Select a track</h3>
+        <p class="floating-player__artist" id="player-artist">We’ll cue up ambient inspiration for each brand.</p>
+        <p class="floating-player__mood" id="player-mood"></p>
+      </div>
+      <div class="floating-player__controls">
+        <button type="button" data-player-action="prev" aria-label="Previous track">&#9664;</button>
+        <button type="button" data-player-action="toggle" aria-label="Play or pause">&#9654;</button>
+        <button type="button" data-player-action="next" aria-label="Next track">&#9654;&#9654;</button>
+      </div>
+      <progress id="player-progress" class="floating-player__progress" value="0" max="1"></progress>
+      <ul class="floating-player__queue" id="player-queue" aria-live="polite"></ul>
+    </div>
+  </aside>
+</body>
+</html>
