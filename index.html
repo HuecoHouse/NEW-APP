@@ -5,6 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Brand Vision Studio</title>
   <link rel="stylesheet" href="styles.css" />
+  <title>Rebrand PDF</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    (function loadPdfLib() {
+      const sources = [
+        'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',
+        'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js'
+      ];
+
+      const loadScript = (src) => new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = false;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Failed to load pdf-lib from ${src}`));
+        document.head.appendChild(script);
+      });
+
+      if (!sources.length) {
+        window.pdfLibReady = Promise.reject(new Error('No PDF-lib sources provided.'));
+        return;
+      }
+
+      let promise = loadScript(sources[0]);
+
+      for (let index = 1; index < sources.length; index += 1) {
+        const source = sources[index];
+        promise = promise.catch((error) => {
+          console.warn(error.message);
+          return loadScript(source);
+        });
+      }
+
+      window.pdfLibReady = promise.catch((error) => {
+        console.error('Unable to load the pdf-lib library from any source.', error);
+        throw error;
+      });
+    }());
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" integrity="sha384-0l9KoU3zD+8eUjl/cQisVIt9uZT5vK8w4bJiYVkQglNgB+M6KsOEKLUWwPRwZjlS" crossorigin="anonymous"></script>
   <script defer src="script.js"></script>
 </head>
 <body>
@@ -73,6 +113,64 @@
         <ul id="library-list" class="library" aria-live="polite"></ul>
       </section>
     </div>
+        <h1>Rebrand PDF</h1>
+        <span class="app__revision" aria-label="Revision number">Rev 1.4</span>
+      </div>
+      <p>Swap an existing brand name and logo throughout a PDF with your updated identity.</p>
+      <p id="pdf-lib-error" class="app__notice" role="alert" hidden>
+        We couldn’t load the PDF processing tools. Check your connection and refresh the page to try again.
+      </p>
+        <span class="app__revision" aria-label="Revision number">Rev 1.1</span>
+      </div>
+      <p>Swap an existing brand name and logo throughout a PDF with your updated identity.</p>
+    </header>
+
+    <form id="rebrand-form" class="form">
+      <section class="form__group">
+        <label for="pdf-input">Source PDF</label>
+        <input type="file" id="pdf-input" accept="application/pdf" required />
+      </section>
+
+      <div id="detected-brand" class="form__detected" data-state="idle" aria-live="polite" aria-atomic="true">
+        <span class="form__detected-label">Detected brand</span>
+        <span class="form__detected-value" id="detected-brand-value">Select a PDF to begin.</span>
+      </div>
+
+      <section id="manual-brand" class="form__group form__group--manual" hidden>
+        <label for="manual-brand-input">Current Company Name</label>
+        <input type="text" id="manual-brand-input" placeholder="Enter the existing company name" autocomplete="organization" />
+        <p class="form__hint">We couldn’t detect the original brand. Provide it manually to continue.</p>
+      </section>
+
+      <section class="form__group">
+        <label for="new-name">New Company Name</label>
+        <input type="text" id="new-name" placeholder="e.g. Dynamic Metals" required />
+      <section class="form__split">
+        <div class="form__group">
+          <label for="current-name">Current Company Name</label>
+          <input type="text" id="current-name" placeholder="e.g. Old Brand Co." required />
+        </div>
+        <div class="form__group">
+          <label for="new-name">New Company Name</label>
+          <input type="text" id="new-name" placeholder="e.g. New Brand Labs" required />
+        </div>
+      </section>
+
+      <section class="form__group">
+        <label for="logo-input">Replacement Logo</label>
+        <input type="file" id="logo-input" accept="image/*" required />
+        <p class="form__hint">Upload a PNG or JPEG. The first logo image found in the PDF will be replaced.</p>
+      </section>
+
+      <button type="submit" class="form__submit">Generate Updated PDF</button>
+    </form>
+
+    <section id="status" class="status" aria-live="polite"></section>
+
+    <section id="download-area" class="download" hidden>
+      <h2>Download</h2>
+      <a id="download-link" class="download__button" download="rebranded.pdf">Save Rebranded PDF</a>
+    </section>
   </main>
 </body>
 </html>
