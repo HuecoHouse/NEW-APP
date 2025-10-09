@@ -31,11 +31,19 @@
 
 body {
   margin: 0;
+  min-height: 100dvh;
   min-height: 100vh;
   font-family: var(--font-stack);
   color: var(--text-primary);
   background: var(--background);
   -webkit-font-smoothing: antialiased;
+  padding: clamp(48px, 8vh, 96px) clamp(18px, 6vw, 56px);
+}
+
+.app {
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  padding: 0;
 }
 
 .app {
@@ -688,6 +696,11 @@ body {
 
 .floating-player {
   position: fixed;
+  top: auto;
+  right: 32px;
+  bottom: 32px;
+  left: auto;
+  width: min(340px, calc(100% - 64px));
   inset: auto 32px 32px auto;
   width: min(340px, calc(100% - 32px));
   border-radius: 24px;
@@ -701,6 +714,7 @@ body {
   flex-direction: column;
   overflow: hidden;
   transition: transform var(--transition), opacity var(--transition), box-shadow var(--transition);
+  transform: none;
 }
 
 .floating-player[data-collapsed="true"] .floating-player__body {
@@ -709,6 +723,8 @@ body {
 
 .floating-player[data-collapsed="true"] {
   width: auto;
+  right: 24px;
+  bottom: 24px;
   inset: auto 24px 24px auto;
 }
 
@@ -954,6 +970,23 @@ body {
 }
 
 @media (max-width: 720px) {
+  body {
+    padding: clamp(32px, 8vh, 56px) clamp(16px, 8vw, 32px) 120px;
+  }
+
+  .floating-player {
+    right: auto;
+    left: 50%;
+    bottom: 24px;
+    width: min(420px, calc(100% - 40px));
+    transform: translateX(-50%);
+  }
+
+  .floating-player[data-collapsed="true"] {
+    right: auto;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
   .app {
     margin: 24px auto;
     padding: 0 20px;

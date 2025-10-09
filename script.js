@@ -86,6 +86,7 @@ const playerState = {
   brandLabel: '',
 };
 
+initializeFloatingPlayer();
 initializeSpotifyIntegration();
 initializeFloatingPlayer();
 const saveButton = document.getElementById('save-analysis');
@@ -1000,6 +1001,7 @@ function initializeFloatingPlayer() {
     });
   }
 
+  updateFloatingPlayer(SOUNDTRACK_POOL, 'Your Playlists');
   updatePlayerToggle();
 }
 

@@ -71,6 +71,7 @@ If you’re using the Spotify helper API, deploy `server.js` to any Node-friendl
 
 ## Spotify integration (optional)
 
+If you want Brand Vision Studio to call Spotify’s API as part of your workflow, you’ll need to register a valid redirect URI in the Spotify developer dashboard and mirror that value in your `.env` file (or wherever you store secrets). The floating soundtrack player will automatically use the helper endpoints once they’re live, so there’s no in-app form to manage the redirect anymore—just configure the backend and start the API server when you need it.
 If you want Brand Vision Studio to call Spotify’s API as part of your workflow, you’ll need to register a valid redirect URI in the Spotify developer dashboard. The Source panel includes a Spotify setup card where you can paste the exact URI you configure with Spotify or let the app suggest one based on the current site. The helper validates that the URL is HTTPS (or `http://localhost` for development), stores it locally, and drives the floating soundtrack player.
 
 When you run `npm run api`, the backend exposes:
