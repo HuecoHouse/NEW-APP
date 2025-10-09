@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Brand Vision Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topline">
+        <span class="badge">Brand Vision Studio · Rev&nbsp;3.0</span>
+        <h1 class="title">Reimagine any brand in seconds.</h1>
+        <p class="subtitle">
+          Paste a website URL and explore AI-assisted strategy, identity, and storytelling — wrapped in a calm, responsive workspace.
+        </p>
+      </header>
+
+      <main class="workspace" aria-live="polite">
+        <section class="panel intake" aria-labelledby="intake-heading">
+          <h2 id="intake-heading">Input</h2>
+          <form id="analysis-form" autocomplete="off">
+            <label class="field" for="source-url">
+              <span>Website URL</span>
+              <input
+                id="source-url"
+                name="source-url"
+                type="url"
+                inputmode="url"
+                placeholder="https://example.com"
+                required
+              />
+            </label>
+
+            <fieldset class="toggles" aria-label="Generation options">
+              <label class="toggle">
+                <input type="checkbox" name="include-logos" checked />
+                <span>Logo concepts</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" name="include-assets" checked />
+                <span>Asset ideas</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" name="include-voice" checked />
+                <span>Voice &amp; messaging</span>
+              </label>
+            </fieldset>
+
+            <button type="submit" class="generate">Generate brand system</button>
+          </form>
+        </section>
+
+        <section class="panel results" aria-labelledby="results-heading">
+          <div class="results-header">
+            <h2 id="results-heading">Results</h2>
+            <p class="status" id="results-status">Waiting for input…</p>
+          </div>
+          <div class="results-grid" id="results-grid"></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="soundtrack" aria-live="polite">
+      <div class="soundtrack-body">
+        <div class="soundtrack-meta">
+          <span class="soundtrack-label">Focus playlist</span>
+          <span class="soundtrack-title" id="track-title">Sunrise Sketch</span>
+        </div>
+        <div class="soundtrack-controls">
+          <button class="player-btn" id="prev-btn" aria-label="Previous track">&#9664;</button>
+          <button class="player-btn primary" id="play-toggle" aria-label="Play or pause">&#9658;</button>
+          <button class="player-btn" id="next-btn" aria-label="Next track">&#9654;</button>
+        </div>
+      </div>
+      <audio id="soundtrack-audio" preload="none"></audio>
+    </div>
+
+    <template id="result-card-template">
+      <article class="result-card">
+        <div class="card-head">
+          <h3 class="card-title"></h3>
+          <div class="card-actions">
+            <button type="button" class="card-action" data-action="expand">Expand</button>
+            <button type="button" class="card-action" data-action="regenerate">Regenerate</button>
+          </div>
+        </div>
+        <p class="card-summary"></p>
+        <ul class="card-list"></ul>
+      </article>
+    </template>
+
+    <dialog id="modal" aria-modal="true">
+      <div class="modal-content">
+        <button class="modal-close" aria-label="Close">&times;</button>
+        <div class="modal-body"></div>
+      </div>
+    </dialog>
+
+    <script src="script.js" type="module"></script>
+  </body>
+</html>

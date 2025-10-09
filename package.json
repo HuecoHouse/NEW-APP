@@ -1,0 +1,13 @@
+{
+  "name": "brand-vision-studio",
+  "version": "3.0.0",
+  "description": "Minimalist AI-inspired brand system generator with floating soundtrack player.",
+  "private": true,
+  "scripts": {
+    "start": "http-server -c-1 -p 8080",
+    "test": "node --check script.js"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}
