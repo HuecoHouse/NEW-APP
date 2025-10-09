@@ -2,6 +2,17 @@
   "name": "brand-vision-studio",
   "version": "1.0.0",
   "description": "Glassmorphism-inspired web app that generates AI-guided brand systems from any public URL.",
+  "private": true,
+  "scripts": {
+    "start": "npx serve .",
+    "build": "node scripts/build-docs.mjs",
+    "api": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-fetch": "^2.7.0"
   "name": "new-pdf-app",
   "version": "1.0.0",
   "description": "Static web app for rebranding PDF documents by swapping company names and logos.",

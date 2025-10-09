@@ -6,6 +6,88 @@ const statusEl = document.getElementById('status');
 const analysisSection = document.getElementById('analysis');
 const analysisSubtitle = document.getElementById('analysis-subtitle');
 const analysisContent = document.getElementById('analysis-content');
+const toolkitError = document.getElementById('toolkit-error');
+const spotifyRedirectInput = document.getElementById('spotify-redirect');
+const spotifyUseCurrentButton = document.getElementById('spotify-use-current');
+const spotifyStatus = document.getElementById('spotify-status');
+const floatingPlayer = document.getElementById('floating-player');
+const playerCollapseButton = document.getElementById('player-collapse');
+const playerTitle = document.getElementById('player-title');
+const playerArtist = document.getElementById('player-artist');
+const playerMood = document.getElementById('player-mood');
+const playerProgress = document.getElementById('player-progress');
+const playerQueue = document.getElementById('player-queue');
+const playerControls = document.querySelectorAll('.floating-player__controls [data-player-action]');
+const playerToggleButton = document.querySelector('[data-player-action="toggle"]');
+
+const SPOTIFY_SETTINGS_KEY = 'brand-vision-spotify-settings';
+
+const SOUNDTRACK_POOL = [
+  {
+    id: 'signal-bloom',
+    title: 'Signal Bloom',
+    artist: 'Aerial Forms',
+    mood: 'Glasswave electronica',
+    previewUrl:
+      'https://cdn.pixabay.com/download/audio/2022/11/09/audio_7eae4f1cd7.mp3?filename=technology-ambient-124947.mp3',
+  },
+  {
+    id: 'halo-lines',
+    title: 'Halo Lines',
+    artist: 'Chromatic Field',
+    mood: 'Dreamy future bass',
+    previewUrl:
+      'https://cdn.pixabay.com/download/audio/2022/11/24/audio_f174a23a3c.mp3?filename=luxury-future-bass-126369.mp3',
+  },
+  {
+    id: 'lumen-drift',
+    title: 'Lumen Drift',
+    artist: 'Polar Echoes',
+    mood: 'Ethereal ambient',
+    previewUrl:
+      'https://cdn.pixabay.com/download/audio/2022/03/15/audio_0c3121d9a4.mp3?filename=ethereal-ambient-111464.mp3',
+  },
+  {
+    id: 'midnight-parallax',
+    title: 'Midnight Parallax',
+    artist: 'Signal Division',
+    mood: 'Lux downtempo',
+    previewUrl:
+      'https://cdn.pixabay.com/download/audio/2021/10/25/audio_53bb97c4b2.mp3?filename=slow-travel-ambient-11029.mp3',
+  },
+  {
+    id: 'crestline',
+    title: 'Crestline',
+    artist: 'North Star',
+    mood: 'Uplifting minimalism',
+    previewUrl:
+      'https://cdn.pixabay.com/download/audio/2022/02/17/audio_5bf86de1ca.mp3?filename=future-ambient-112191.mp3',
+  },
+  {
+    id: 'afterglow',
+    title: 'Afterglow Systems',
+    artist: 'Analog Atlas',
+    mood: 'Deep ambient pulse',
+    previewUrl:
+      'https://cdn.pixabay.com/download/audio/2022/03/16/audio_481508a403.mp3?filename=deep-ambient-112158.mp3',
+  },
+];
+
+const state = {
+  currentAnalysis: null,
+};
+
+const playerState = {
+  audio: null,
+  queue: [],
+  currentIndex: 0,
+  isPlaying: false,
+  collapsed: false,
+  brandLabel: '',
+};
+
+initializeSpotifyIntegration();
+initializeFloatingPlayer();
 const saveButton = document.getElementById('save-analysis');
 const libraryList = document.getElementById('library-list');
 const librarySearch = document.getElementById('library-search');
@@ -42,6 +124,7 @@ form.addEventListener('submit', async (event) => {
 
     state.currentAnalysis = analysis;
     renderAnalysis(analysis);
+    setStatus('Brand system ready. Explore and refine the results.', 'success');
     setStatus('Brand system ready. Explore, expand, or save it to your library.', 'success');
 
     if (warning) {
@@ -97,6 +180,14 @@ analysisContent.addEventListener('click', (event) => {
   }
 
   if (sectionId === 'logos' && action === 'regenerate') {
+    state.currentAnalysis.logoDirections = generateLogos(
+      state.currentAnalysis.context.logoHints,
+      createSeededRng(Date.now()),
+    );
+    renderAnalysis(state.currentAnalysis);
+  }
+});
+
     state.currentAnalysis.logoDirections = generateLogos(state.currentAnalysis.context.logoHints, createSeededRng(Date.now()));
     renderAnalysis(state.currentAnalysis);
   }
@@ -333,6 +424,7 @@ function buildAnalysis(context, options) {
   const fonts = generateFonts(context.fonts, rng);
   const assets = options.includeAssets ? generateAssets(rng) : [];
   const logoDirections = generateLogos(context.logoHints, rng);
+  const soundtrack = generateSoundtrack(context, rng);
 
   const textSections = {
     overview: {
@@ -387,6 +479,7 @@ function buildAnalysis(context, options) {
     fonts,
     assets,
     logoDirections,
+    soundtrack,
   };
 }
 
@@ -608,6 +701,19 @@ function generateLogos(hints, rng) {
   return shuffle([...treatments], rng).slice(0, 4);
 }
 
+function generateSoundtrack(context, rng) {
+  const accent = capitalize((context.keywords && context.keywords[0]) || context.siteName || context.domain);
+  const selection = shuffle([...SOUNDTRACK_POOL], rng)
+    .slice(0, 4)
+    .map((track, index) => ({
+      ...track,
+      id: `${track.id}-${index}`,
+      mood: `${track.mood} · ${accent}`,
+    }));
+
+  return selection;
+}
+
 function deriveAudience(context) {
   if (context.keywords.some((word) => /team|business|company/i.test(word))) {
     return 'growth-minded teams';
@@ -633,6 +739,11 @@ function renderAnalysis(analysis) {
   const { textSections, voice, palette, fonts, assets, logoDirections } = analysis;
   const context = analysis.context;
 
+  if (!analysis.soundtrack || !analysis.soundtrack.length) {
+    const seed = hashString(`${context.domain}-${context.siteName}-soundtrack`);
+    analysis.soundtrack = generateSoundtrack(context, createSeededRng(seed));
+  }
+
   const cards = [];
 
   cards.push(createTextCard(textSections.overview, analysis.siteName, analysis.domain));
@@ -646,6 +757,7 @@ function renderAnalysis(analysis) {
   cards.push(createFontCard(fonts));
   cards.push(createLogoCard(logoDirections));
   cards.push(createAssetCard(assets));
+  cards.push(createSoundtrackCard(analysis.soundtrack));
 
   analysisContent.innerHTML = cards.filter(Boolean).join('');
 
@@ -654,6 +766,8 @@ function renderAnalysis(analysis) {
   } else {
     analysisSubtitle.textContent = 'Results generated with contextual AI heuristics.';
   }
+
+  updateFloatingPlayer(analysis.soundtrack, analysis.siteName);
 }
 
 function createActionButtons(sectionId, actions) {
@@ -796,6 +910,36 @@ function createAssetCard(assets) {
   `;
 }
 
+function createSoundtrackCard(tracks) {
+  if (!tracks || !tracks.length) return '';
+  const items = tracks
+    .map(
+      (track, index) => `
+        <li>
+          <div>
+            <strong>${escapeHtml(track.title)}</strong>
+            <span>${escapeHtml(track.artist)}</span>
+          </div>
+          <span>${escapeHtml(track.mood)}</span>
+          <span class="result-card__meta">Track ${index + 1}</span>
+        </li>
+      `,
+    )
+    .join('');
+
+  return `
+    <article class="result-card" data-section="soundtrack">
+      <div class="result-card__header">
+        <div>
+          <h3 class="result-card__title">Soundtrack Suite</h3>
+          <p class="result-card__meta">Tap a track in the floating player to play a preview.</p>
+        </div>
+      </div>
+      <ul class="soundtrack-list">${items}</ul>
+    </article>
+  `;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -805,6 +949,152 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function initializeFloatingPlayer() {
+  if (!floatingPlayer) return;
+
+  playerState.audio = new Audio();
+  playerState.audio.crossOrigin = 'anonymous';
+  playerState.audio.preload = 'none';
+
+  playerState.audio.addEventListener('timeupdate', syncPlayerProgress);
+  playerState.audio.addEventListener('ended', () => playNextTrack(true));
+  playerState.audio.addEventListener('play', () => {
+    playerState.isPlaying = true;
+    updatePlayerToggle();
+    renderPlayerQueue();
+  });
+  playerState.audio.addEventListener('pause', () => {
+    playerState.isPlaying = false;
+    updatePlayerToggle();
+    renderPlayerQueue();
+  });
+
+  if (playerCollapseButton) {
+    playerCollapseButton.addEventListener('click', () => {
+      setPlayerCollapsed(!playerState.collapsed);
+    });
+  }
+
+  if (playerControls && playerControls.length) {
+    playerControls.forEach((button) => {
+      button.addEventListener('click', () => {
+        const action = button.dataset.playerAction;
+        if (action === 'prev') {
+          playPreviousTrack();
+        } else if (action === 'next') {
+          playNextTrack();
+        } else if (action === 'toggle') {
+          togglePlayback();
+        }
+      });
+    });
+  }
+
+  if (playerQueue) {
+    playerQueue.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-track-index]');
+      if (!button) return;
+      const index = Number.parseInt(button.dataset.trackIndex, 10);
+      if (Number.isNaN(index)) return;
+      loadTrack(index, { autoplay: true });
+    });
+  }
+
+  updatePlayerToggle();
+}
+
+function updateFloatingPlayer(tracks, siteName) {
+  if (!floatingPlayer) return;
+
+  if (!tracks || !tracks.length) {
+    floatingPlayer.hidden = true;
+    if (playerState.audio) {
+      playerState.audio.pause();
+      playerState.audio.removeAttribute('src');
+    }
+    playerState.queue = [];
+    if (playerProgress) {
+      playerProgress.value = 0;
+    }
+    return;
+  }
+
+  floatingPlayer.hidden = false;
+  setPlayerCollapsed(false);
+  playerState.queue = tracks;
+  playerState.currentIndex = 0;
+  playerState.isPlaying = false;
+  playerState.brandLabel = siteName || '';
+  if (playerState.audio) {
+    playerState.audio.pause();
+    playerState.audio.removeAttribute('src');
+  }
+  if (playerProgress) {
+    playerProgress.value = 0;
+  }
+  updatePlayerMeta(tracks[0], siteName);
+  renderPlayerQueue();
+  updatePlayerToggle();
+}
+
+function loadTrack(index, options = {}) {
+  if (!playerState.queue[index]) return;
+  playerState.currentIndex = index;
+  const track = playerState.queue[index];
+  updatePlayerMeta(track);
+  if (playerState.audio) {
+    playerState.audio.src = track.previewUrl;
+    playerState.audio.currentTime = 0;
+  }
+  if (playerProgress) {
+    playerProgress.value = 0;
+  }
+  renderPlayerQueue();
+
+  if (options.autoplay && playerState.audio) {
+    playerState.audio
+      .play()
+      .catch((error) => {
+        console.warn('Playback failed', error);
+      });
+  }
+}
+
+function updatePlayerMeta(track, siteName) {
+  if (playerTitle) {
+    playerTitle.textContent = track.title || 'Untitled track';
+  }
+  if (playerArtist) {
+    const parts = [];
+    if (track.artist) parts.push(track.artist);
+    const label = siteName || playerState.brandLabel;
+    if (label) parts.push(label);
+    playerArtist.textContent = parts.join(' · ') || 'Brand Vision Studio';
+  }
+  if (playerMood) {
+    playerMood.textContent = track.mood || '';
+    playerMood.hidden = !track.mood;
+  }
+}
+
+function renderPlayerQueue() {
+  if (!playerQueue) return;
+  if (!playerState.queue.length) {
+    playerQueue.innerHTML = '';
+    return;
+  }
+
+  const markup = playerState.queue
+    .map((track, index) => {
+      const isCurrent = index === playerState.currentIndex;
+      const isPlaying = isCurrent && playerState.isPlaying;
+      return `
+        <li>
+          <button type="button" data-track-index="${index}" data-current="${isCurrent}" data-playing="${isPlaying}">
+            <span>${escapeHtml(track.title)}</span>
+            <span>${escapeHtml(track.artist)}</span>
+            <span>${escapeHtml(track.mood)}</span>
+          </button>
 function createSeededRng(seed) {
   let value = seed % 2147483647;
   if (value <= 0) value += 2147483646;
@@ -902,6 +1192,219 @@ function renderLibrary(filterTerm = '') {
     })
     .join('');
 
+  playerQueue.innerHTML = markup;
+}
+
+function togglePlayback() {
+  if (!playerState.queue.length || !playerState.audio) return;
+
+  if (!playerState.audio.src) {
+    loadTrack(playerState.currentIndex, { autoplay: true });
+    return;
+  }
+
+  if (playerState.isPlaying) {
+    playerState.audio.pause();
+  } else {
+    playerState.audio
+      .play()
+      .catch((error) => {
+        console.warn('Playback failed', error);
+      });
+  }
+}
+
+function playNextTrack(autoAdvance = true) {
+  if (!playerState.queue.length) return;
+  const nextIndex = (playerState.currentIndex + 1) % playerState.queue.length;
+  loadTrack(nextIndex, { autoplay: autoAdvance });
+}
+
+function playPreviousTrack() {
+  if (!playerState.queue.length) return;
+  const previousIndex = (playerState.currentIndex - 1 + playerState.queue.length) % playerState.queue.length;
+  loadTrack(previousIndex, { autoplay: true });
+}
+
+function syncPlayerProgress() {
+  if (!playerProgress || !playerState.audio) return;
+  if (!Number.isFinite(playerState.audio.duration) || playerState.audio.duration <= 0) {
+    playerProgress.value = 0;
+    return;
+  }
+  playerProgress.value = playerState.audio.currentTime / playerState.audio.duration;
+}
+
+function updatePlayerToggle() {
+  if (!playerToggleButton) return;
+  if (playerState.isPlaying) {
+    playerToggleButton.innerHTML = '&#10073;&#10073;';
+    playerToggleButton.setAttribute('aria-label', 'Pause');
+  } else {
+    playerToggleButton.innerHTML = '&#9654;';
+    playerToggleButton.setAttribute('aria-label', 'Play');
+  }
+}
+
+function setPlayerCollapsed(collapsed) {
+  if (!floatingPlayer || !playerCollapseButton) return;
+  playerState.collapsed = collapsed;
+  floatingPlayer.dataset.collapsed = collapsed ? 'true' : 'false';
+  playerCollapseButton.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+}
+
+function createSeededRng(seed) {
+  let value = seed % 2147483647;
+  if (value <= 0) value += 2147483646;
+  return function rng() {
+    value = (value * 16807) % 2147483647;
+    return (value - 1) / 2147483646;
+  };
+}
+
+function hashString(input) {
+  let hash = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash << 5) - hash + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash) + 1;
+}
+
+function pick(array, rng) {
+  if (!array.length) return '';
+  const index = Math.floor(rng() * array.length);
+  return array[index];
+}
+
+function shuffle(array, rng) {
+  for (let i = array.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function capitalize(value) {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function generateId() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function initializeSpotifyIntegration() {
+  if (!spotifyRedirectInput || !spotifyStatus) {
+    return;
+  }
+
+  const config = loadSpotifyConfig();
+  if (config.redirectUri) {
+    spotifyRedirectInput.value = config.redirectUri;
+  }
+
+  updateSpotifyStatus(spotifyRedirectInput.value.trim());
+
+  spotifyRedirectInput.addEventListener('input', () => {
+    const value = spotifyRedirectInput.value.trim();
+    const isValid = updateSpotifyStatus(value);
+
+    if (isValid || !value) {
+      persistSpotifyConfig({ redirectUri: value });
+    }
+  });
+
+  if (spotifyUseCurrentButton) {
+    spotifyUseCurrentButton.addEventListener('click', () => {
+      const suggestion = getSuggestedSpotifyRedirect();
+      spotifyRedirectInput.value = suggestion;
+      updateSpotifyStatus(suggestion);
+      persistSpotifyConfig({ redirectUri: suggestion });
+    });
+  }
+}
+
+function getSuggestedSpotifyRedirect() {
+  try {
+    const { origin, pathname } = window.location;
+    const basePath = pathname.endsWith('/') ? pathname : pathname.replace(/[^/]*$/, '/');
+    return `${origin}${basePath}api/spotify/callback`;
+  } catch (error) {
+    console.warn('Unable to derive Spotify redirect suggestion', error);
+    return 'https://yourdomain.com/api/spotify/callback';
+  }
+}
+
+function updateSpotifyStatus(rawValue) {
+  if (!spotifyStatus) return false;
+
+  const value = rawValue.trim();
+  if (!value) {
+    spotifyStatus.dataset.tone = '';
+    const suggestion = escapeHtml(getSuggestedSpotifyRedirect());
+    spotifyStatus.innerHTML = `Spotify requires an exact redirect URI match. Start with <code>${suggestion}</code> and add it to your app settings.`;
+    return false;
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch (error) {
+    spotifyStatus.dataset.tone = 'error';
+    spotifyStatus.textContent = 'Enter a full URL (https://…) or use http://localhost for local development.';
+    return false;
+  }
+
+  const isHttps = parsed.protocol === 'https:';
+  const isLocalhost =
+    parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1');
+
+  if (!isHttps && !isLocalhost) {
+    spotifyStatus.dataset.tone = 'error';
+    spotifyStatus.textContent = 'Spotify accepts https:// URLs in production and http://localhost while testing.';
+    return false;
+  }
+
+  if (parsed.hash) {
+    spotifyStatus.dataset.tone = 'error';
+    spotifyStatus.textContent = 'Remove the hash fragment from the redirect URI before saving it.';
+    return false;
+  }
+
+  spotifyStatus.dataset.tone = 'success';
+  spotifyStatus.textContent = 'Looks good. Register this exact value in your Spotify application dashboard.';
+  return true;
+}
+
+function loadSpotifyConfig() {
+  try {
+    const raw = localStorage.getItem(SPOTIFY_SETTINGS_KEY);
+    if (!raw) return { redirectUri: '' };
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return { redirectUri: '' };
+    }
+    return { redirectUri: typeof parsed.redirectUri === 'string' ? parsed.redirectUri : '' };
+  } catch (error) {
+    console.warn('Unable to parse Spotify settings', error);
+    return { redirectUri: '' };
+  }
+}
+
+function persistSpotifyConfig(config) {
+  try {
+    if (!config.redirectUri) {
+      localStorage.removeItem(SPOTIFY_SETTINGS_KEY);
+      return;
+    }
+    localStorage.setItem(SPOTIFY_SETTINGS_KEY, JSON.stringify({ redirectUri: config.redirectUri }));
+  } catch (error) {
+    console.warn('Unable to persist Spotify settings', error);
+  }
   libraryList.innerHTML = rows;
 (function startApp() {
   const notice = document.getElementById('pdf-lib-error');
