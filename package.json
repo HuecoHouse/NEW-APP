@@ -13,5 +13,12 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "node-fetch": "^2.7.0"
+  "name": "new-pdf-app",
+  "version": "1.0.0",
+  "description": "Static web app for rebranding PDF documents by swapping company names and logos.",
+  "private": true,
+  "scripts": {
+    "start": "npx serve .",
+    "build": "node scripts/build-docs.mjs"
   }
 }

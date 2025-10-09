@@ -7,6 +7,9 @@ const analysisSection = document.getElementById('analysis');
 const analysisSubtitle = document.getElementById('analysis-subtitle');
 const analysisContent = document.getElementById('analysis-content');
 const toolkitError = document.getElementById('toolkit-error');
+const spotifyRedirectInput = document.getElementById('spotify-redirect');
+const spotifyUseCurrentButton = document.getElementById('spotify-use-current');
+const spotifyStatus = document.getElementById('spotify-status');
 const floatingPlayer = document.getElementById('floating-player');
 const playerCollapseButton = document.getElementById('player-collapse');
 const playerTitle = document.getElementById('player-title');
@@ -16,6 +19,8 @@ const playerProgress = document.getElementById('player-progress');
 const playerQueue = document.getElementById('player-queue');
 const playerControls = document.querySelectorAll('.floating-player__controls [data-player-action]');
 const playerToggleButton = document.querySelector('[data-player-action="toggle"]');
+
+const SPOTIFY_SETTINGS_KEY = 'brand-vision-spotify-settings';
 
 const SOUNDTRACK_POOL = [
   {
@@ -82,6 +87,21 @@ const playerState = {
 };
 
 initializeFloatingPlayer();
+initializeSpotifyIntegration();
+initializeFloatingPlayer();
+const saveButton = document.getElementById('save-analysis');
+const libraryList = document.getElementById('library-list');
+const librarySearch = document.getElementById('library-search');
+const toolkitError = document.getElementById('toolkit-error');
+
+const STORAGE_KEY = 'brand-vision-library-v1';
+
+const state = {
+  currentAnalysis: null,
+  library: loadLibrary(),
+};
+
+renderLibrary();
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -106,6 +126,7 @@ form.addEventListener('submit', async (event) => {
     state.currentAnalysis = analysis;
     renderAnalysis(analysis);
     setStatus('Brand system ready. Explore and refine the results.', 'success');
+    setStatus('Brand system ready. Explore, expand, or save it to your library.', 'success');
 
     if (warning) {
       toolkitError.textContent = warning;
@@ -166,6 +187,55 @@ analysisContent.addEventListener('click', (event) => {
     );
     renderAnalysis(state.currentAnalysis);
   }
+});
+
+    state.currentAnalysis.logoDirections = generateLogos(state.currentAnalysis.context.logoHints, createSeededRng(Date.now()));
+    renderAnalysis(state.currentAnalysis);
+  }
+});
+
+saveButton.addEventListener('click', () => {
+  if (!state.currentAnalysis) return;
+  const clone = JSON.parse(JSON.stringify(state.currentAnalysis));
+  const existingIndex = state.library.findIndex((entry) => entry.id === clone.id);
+
+  if (existingIndex >= 0) {
+    state.library[existingIndex] = clone;
+  } else {
+    state.library.unshift(clone);
+  }
+
+  persistLibrary();
+  renderLibrary();
+  setStatus('Saved to your library. Search and revisit it anytime.', 'success');
+});
+
+libraryList.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-library-action]');
+  if (!button) return;
+
+  const { libraryAction: action, id } = button.dataset;
+  const entryIndex = state.library.findIndex((item) => item.id === id);
+  if (entryIndex < 0) return;
+
+  if (action === 'load') {
+    state.currentAnalysis = JSON.parse(JSON.stringify(state.library[entryIndex]));
+    renderAnalysis(state.currentAnalysis);
+    setStatus('Loaded analysis from your library.', 'info');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  if (action === 'delete') {
+    state.library.splice(entryIndex, 1);
+    persistLibrary();
+    renderLibrary();
+    setStatus('Removed from your library.', 'info');
+  }
+});
+
+librarySearch.addEventListener('input', (event) => {
+  renderLibrary(event.target.value.trim().toLowerCase());
 });
 
 async function analyzeWebsite(url, options) {
@@ -1027,6 +1097,98 @@ function renderPlayerQueue() {
             <span>${escapeHtml(track.artist)}</span>
             <span>${escapeHtml(track.mood)}</span>
           </button>
+function createSeededRng(seed) {
+  let value = seed % 2147483647;
+  if (value <= 0) value += 2147483646;
+  return function rng() {
+    value = (value * 16807) % 2147483647;
+    return (value - 1) / 2147483646;
+  };
+}
+
+function hashString(input) {
+  let hash = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash << 5) - hash + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash) + 1;
+}
+
+function pick(array, rng) {
+  if (!array.length) return '';
+  const index = Math.floor(rng() * array.length);
+  return array[index];
+}
+
+function shuffle(array, rng) {
+  for (let i = array.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function capitalize(value) {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function generateId() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function loadLibrary() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
+  } catch (error) {
+    console.warn('Unable to parse library', error);
+    return [];
+  }
+}
+
+function persistLibrary() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.library));
+}
+
+function renderLibrary(filterTerm = '') {
+  if (!state.library.length) {
+    libraryList.innerHTML = '<li class="empty-state">Your saved brand systems will live here.</li>';
+    return;
+  }
+
+  const filtered = state.library.filter((entry) => {
+    if (!filterTerm) return true;
+    const haystack = [entry.siteName, entry.domain, entry.pageTitle, Object.values(entry.textSections || {}).map((section) => section.body).join(' ')].join(' ').toLowerCase();
+    return haystack.includes(filterTerm);
+  });
+
+  if (!filtered.length) {
+    libraryList.innerHTML = '<li class="empty-state">No matches. Try another search term.</li>';
+    return;
+  }
+
+  const rows = filtered
+    .map((entry) => {
+      const date = new Date(entry.createdAt);
+      const subtitle = `${escapeHtml(entry.domain)} · ${date.toLocaleString(undefined, { month: 'short', day: 'numeric' })}`;
+      return `
+        <li class="library__item">
+          <h3 class="library__title">${escapeHtml(entry.siteName)}</h3>
+          <div class="library__meta">
+            <span>${subtitle}</span>
+            <div class="library__actions">
+              <button type="button" data-library-action="load" data-id="${entry.id}">Load</button>
+              <button type="button" data-library-action="delete" data-id="${entry.id}">Remove</button>
+            </div>
+          </div>
         </li>
       `;
     })
@@ -1137,3 +1299,803 @@ function generateId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function initializeSpotifyIntegration() {
+  if (!spotifyRedirectInput || !spotifyStatus) {
+    return;
+  }
+
+  const config = loadSpotifyConfig();
+  if (config.redirectUri) {
+    spotifyRedirectInput.value = config.redirectUri;
+  }
+
+  updateSpotifyStatus(spotifyRedirectInput.value.trim());
+
+  spotifyRedirectInput.addEventListener('input', () => {
+    const value = spotifyRedirectInput.value.trim();
+    const isValid = updateSpotifyStatus(value);
+
+    if (isValid || !value) {
+      persistSpotifyConfig({ redirectUri: value });
+    }
+  });
+
+  if (spotifyUseCurrentButton) {
+    spotifyUseCurrentButton.addEventListener('click', () => {
+      const suggestion = getSuggestedSpotifyRedirect();
+      spotifyRedirectInput.value = suggestion;
+      updateSpotifyStatus(suggestion);
+      persistSpotifyConfig({ redirectUri: suggestion });
+    });
+  }
+}
+
+function getSuggestedSpotifyRedirect() {
+  try {
+    const { origin, pathname } = window.location;
+    const basePath = pathname.endsWith('/') ? pathname : pathname.replace(/[^/]*$/, '/');
+    return `${origin}${basePath}api/spotify/callback`;
+  } catch (error) {
+    console.warn('Unable to derive Spotify redirect suggestion', error);
+    return 'https://yourdomain.com/api/spotify/callback';
+  }
+}
+
+function updateSpotifyStatus(rawValue) {
+  if (!spotifyStatus) return false;
+
+  const value = rawValue.trim();
+  if (!value) {
+    spotifyStatus.dataset.tone = '';
+    const suggestion = escapeHtml(getSuggestedSpotifyRedirect());
+    spotifyStatus.innerHTML = `Spotify requires an exact redirect URI match. Start with <code>${suggestion}</code> and add it to your app settings.`;
+    return false;
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch (error) {
+    spotifyStatus.dataset.tone = 'error';
+    spotifyStatus.textContent = 'Enter a full URL (https://…) or use http://localhost for local development.';
+    return false;
+  }
+
+  const isHttps = parsed.protocol === 'https:';
+  const isLocalhost =
+    parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1');
+
+  if (!isHttps && !isLocalhost) {
+    spotifyStatus.dataset.tone = 'error';
+    spotifyStatus.textContent = 'Spotify accepts https:// URLs in production and http://localhost while testing.';
+    return false;
+  }
+
+  if (parsed.hash) {
+    spotifyStatus.dataset.tone = 'error';
+    spotifyStatus.textContent = 'Remove the hash fragment from the redirect URI before saving it.';
+    return false;
+  }
+
+  spotifyStatus.dataset.tone = 'success';
+  spotifyStatus.textContent = 'Looks good. Register this exact value in your Spotify application dashboard.';
+  return true;
+}
+
+function loadSpotifyConfig() {
+  try {
+    const raw = localStorage.getItem(SPOTIFY_SETTINGS_KEY);
+    if (!raw) return { redirectUri: '' };
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return { redirectUri: '' };
+    }
+    return { redirectUri: typeof parsed.redirectUri === 'string' ? parsed.redirectUri : '' };
+  } catch (error) {
+    console.warn('Unable to parse Spotify settings', error);
+    return { redirectUri: '' };
+  }
+}
+
+function persistSpotifyConfig(config) {
+  try {
+    if (!config.redirectUri) {
+      localStorage.removeItem(SPOTIFY_SETTINGS_KEY);
+      return;
+    }
+    localStorage.setItem(SPOTIFY_SETTINGS_KEY, JSON.stringify({ redirectUri: config.redirectUri }));
+  } catch (error) {
+    console.warn('Unable to persist Spotify settings', error);
+  }
+  libraryList.innerHTML = rows;
+(function startApp() {
+  const notice = document.getElementById('pdf-lib-error');
+
+  const initialize = () => {
+    const form = document.getElementById('rebrand-form');
+    const pdfInput = document.getElementById('pdf-input');
+    const newNameInput =
+      document.getElementById('new-name') ||
+      document.querySelector('input[name="new-name"], input[data-role="new-name"], input[type="text"]');
+    const logoInput = document.getElementById('logo-input');
+    const statusPanel = document.getElementById('status');
+    const downloadArea = document.getElementById('download-area');
+    const downloadLink = document.getElementById('download-link');
+    const detectedBrand = document.getElementById('detected-brand');
+    const detectedBrandValue = document.getElementById('detected-brand-value');
+    const manualBrandGroup = document.getElementById('manual-brand');
+    const manualBrandInput = document.getElementById('manual-brand-input');
+    const manualBrandHint = manualBrandGroup ? manualBrandGroup.querySelector('.form__hint') : null;
+
+    if (!newNameInput) {
+      throw new Error('Missing the “New Company Name” field in the interface.');
+    }
+
+    let cachedPdfBuffer = null;
+    let cachedPdfSignature = null;
+    let cachedDetectedName = null;
+    let detectionRequestId = 0;
+
+    hideManualBrandInput();
+    setDetectionState('idle', 'Select a PDF to begin.');
+
+    pdfInput.addEventListener('change', () => {
+      detectionRequestId += 1;
+      const currentRequest = detectionRequestId;
+
+      cachedPdfBuffer = null;
+      cachedPdfSignature = null;
+      cachedDetectedName = null;
+      hideManualBrandInput();
+
+      if (!pdfInput.files.length) {
+        setDetectionState('idle', 'Select a PDF to begin.');
+        return;
+      }
+
+      const file = pdfInput.files[0];
+      const signature = getFileSignature(file);
+      setDetectionState('loading', 'Detecting company name…');
+
+      readFileAsArrayBuffer(file)
+        .then(async (buffer) => {
+          if (currentRequest !== detectionRequestId) {
+            return;
+          }
+
+          cachedPdfBuffer = buffer;
+          cachedPdfSignature = signature;
+
+          const pdfDoc = await PDFLib.PDFDocument.load(new Uint8Array(buffer), { ignoreEncryption: true });
+          const detectedName = detectCompanyName({ pdfDoc });
+
+          if (currentRequest !== detectionRequestId) {
+            return;
+          }
+
+          cachedDetectedName = detectedName || null;
+          if (detectedName) {
+            hideManualBrandInput();
+            setDetectionState('success', detectedName);
+          } else {
+            setDetectionState('error', 'We couldn’t identify a consistent company name in this PDF. Enter it below.');
+            showManualBrandInput('We couldn’t detect the original brand. Enter it below to continue.');
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+          if (currentRequest !== detectionRequestId) {
+            return;
+          }
+          cachedPdfBuffer = null;
+          cachedPdfSignature = null;
+          cachedDetectedName = null;
+          setDetectionState('error', 'We couldn’t analyse this PDF. Try another file.');
+        });
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (!pdfInput.files.length || !logoInput.files.length) {
+        return;
+      }
+
+      const file = pdfInput.files[0];
+      const signature = getFileSignature(file);
+
+      const messages = [];
+      const updateStatus = () => renderStatus(messages);
+      const reset = () => {
+        statusPanel.classList.remove('status--visible');
+        statusPanel.innerHTML = '';
+        downloadArea.hidden = true;
+        if (downloadLink.href) {
+          URL.revokeObjectURL(downloadLink.href);
+          downloadLink.removeAttribute('href');
+        }
+      };
+
+      reset();
+
+      try {
+        const newName = newNameInput.value.trim();
+
+        if (!newName) {
+          throw new Error('The new company name is required.');
+        }
+
+        messages.push('Reading PDF document…');
+        updateStatus();
+        const pdfBuffer = cachedPdfSignature === signature && cachedPdfBuffer
+          ? cachedPdfBuffer
+          : await readFileAsArrayBuffer(file);
+
+        if (cachedPdfSignature !== signature) {
+          cachedPdfSignature = signature;
+          cachedPdfBuffer = pdfBuffer;
+          cachedDetectedName = null;
+        }
+
+        const pdfDoc = await PDFLib.PDFDocument.load(new Uint8Array(pdfBuffer), { ignoreEncryption: true });
+
+        messages.push('Detecting current company name…');
+        updateStatus();
+
+        let currentName = cachedDetectedName;
+        if (!currentName && manualBrandInput) {
+          const manualValue = manualBrandInput.value.trim();
+          if (manualValue) {
+            currentName = manualValue;
+            cachedDetectedName = manualValue;
+          }
+        }
+
+        if (!currentName) {
+          currentName = detectCompanyName({ pdfDoc });
+          cachedDetectedName = currentName || null;
+        }
+
+        if (!currentName) {
+          setDetectionState('error', 'We couldn’t identify a consistent company name in this PDF. Enter it below.');
+          showManualBrandInput('Enter the original company name so we can update it throughout the document.');
+          throw new Error('Unable to detect the existing company name. Enter it manually when prompted.');
+        }
+
+        setDetectionState('success', currentName);
+        hideManualBrandInput();
+        messages.push(`Detected existing company name: "${currentName}".`);
+        updateStatus();
+
+        messages.push(`Replacing company name "${currentName}" with "${newName}"…`);
+        updateStatus();
+
+        messages.push('Preparing logo replacement…');
+        updateStatus();
+        const logoBuffer = await readFileAsArrayBuffer(logoInput.files[0]);
+
+        const {
+          pdfBytes: updatedPdfBytes,
+          replacements,
+          imageReplaced
+        } = await rebrandPdf({
+          pdfDoc,
+          logoBuffer,
+          currentName,
+          newName,
+          logoMimeType: logoInput.files[0].type
+        });
+
+        messages.push(replacements
+          ? `Updated ${replacements} occurrence${replacements === 1 ? '' : 's'} of the company name.`
+          : 'No occurrences of the current company name were found in the document.');
+        updateStatus();
+
+        messages.push(imageReplaced ? 'Replaced the first detected logo image in the PDF.' : 'No embedded images were replaced.');
+        updateStatus();
+
+        const blob = new Blob([updatedPdfBytes], { type: 'application/pdf' });
+        const objectUrl = URL.createObjectURL(blob);
+
+        downloadLink.href = objectUrl;
+        downloadLink.download = buildDownloadName(pdfInput.files[0].name, newName);
+        downloadArea.hidden = false;
+        messages.push('Rebranding complete. Download your updated PDF below.');
+        updateStatus();
+      } catch (error) {
+        console.error(error);
+        messages.push(`Error: ${error.message}`);
+        updateStatus();
+      }
+    });
+
+    function showManualBrandInput(message) {
+      if (!manualBrandGroup || !manualBrandInput) {
+        return;
+      }
+      manualBrandGroup.hidden = false;
+      manualBrandInput.required = true;
+      if (message && manualBrandHint) {
+        manualBrandHint.textContent = message;
+      } else if (manualBrandHint) {
+        manualBrandHint.textContent = 'We couldn’t detect the original brand. Provide it manually to continue.';
+      }
+      const focusField = () => manualBrandInput.focus();
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(focusField);
+      } else {
+        setTimeout(focusField, 0);
+      }
+    }
+
+    function hideManualBrandInput() {
+      if (!manualBrandGroup || !manualBrandInput) {
+        return;
+      }
+      manualBrandGroup.hidden = true;
+      manualBrandInput.required = false;
+      manualBrandInput.value = '';
+      if (manualBrandHint) {
+        manualBrandHint.textContent = 'We couldn’t detect the original brand. Provide it manually to continue.';
+      }
+    }
+
+    function setDetectionState(state, message) {
+      if (!detectedBrand || !detectedBrandValue) {
+        return;
+      }
+      detectedBrand.dataset.state = state;
+      detectedBrandValue.textContent = message;
+    }
+
+    function getFileSignature(file) {
+      return `${file.name}::${file.size}::${file.lastModified}`;
+    }
+
+    function renderStatus(messages) {
+      statusPanel.classList.add('status--visible');
+      statusPanel.innerHTML = '';
+      const list = document.createElement('ul');
+      list.className = 'status__log';
+      messages.forEach((message) => {
+        const item = document.createElement('li');
+        item.textContent = message;
+        list.appendChild(item);
+      });
+      statusPanel.appendChild(list);
+    }
+
+    function readFileAsArrayBuffer(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Unable to read the selected file.'));
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    function buildDownloadName(originalName, brandName) {
+      const base = originalName.replace(/\.pdf$/i, '');
+      const sanitizedBrand = brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      return `${base}-${sanitizedBrand || 'rebranded'}.pdf`;
+    }
+  };
+
+  const handleFailure = (error) => {
+    console.error(error);
+    if (notice) {
+      notice.hidden = false;
+    }
+    const submitButton = document.querySelector('.form__submit');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Unavailable';
+    }
+  };
+
+  if (window.pdfLibReady && typeof window.pdfLibReady.then === 'function') {
+    window.pdfLibReady.then(initialize).catch(handleFailure);
+  } else if (typeof PDFLib !== 'undefined') {
+    initialize();
+  } else {
+    handleFailure(new Error('The PDF processing tools failed to load. Please refresh the page and try again.'));
+  }
+}());
+
+async function rebrandPdf({ pdfDoc, logoBuffer, currentName, newName, logoMimeType }) {
+const form = document.getElementById('rebrand-form');
+const pdfInput = document.getElementById('pdf-input');
+const currentNameInput = document.getElementById('current-name');
+const newNameInput = document.getElementById('new-name');
+const logoInput = document.getElementById('logo-input');
+const statusPanel = document.getElementById('status');
+const downloadArea = document.getElementById('download-area');
+const downloadLink = document.getElementById('download-link');
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  if (!pdfInput.files.length || !logoInput.files.length) {
+    return;
+  }
+
+  const messages = [];
+  const updateStatus = () => renderStatus(messages);
+  const reset = () => {
+    statusPanel.classList.remove('status--visible');
+    statusPanel.innerHTML = '';
+    downloadArea.hidden = true;
+    if (downloadLink.href) {
+      URL.revokeObjectURL(downloadLink.href);
+      downloadLink.removeAttribute('href');
+    }
+  };
+
+  reset();
+
+  try {
+    const oldName = currentNameInput.value.trim();
+    const newName = newNameInput.value.trim();
+
+    if (!oldName || !newName) {
+      throw new Error('Both the current and new company names are required.');
+    }
+
+    messages.push('Reading PDF document…');
+    updateStatus();
+    const pdfBuffer = await readFileAsArrayBuffer(pdfInput.files[0]);
+
+    messages.push(`Replacing company name "${oldName}" with "${newName}"…`);
+    updateStatus();
+
+    messages.push('Preparing logo replacement…');
+    updateStatus();
+    const logoBuffer = await readFileAsArrayBuffer(logoInput.files[0]);
+
+    const {
+      pdfBytes,
+      replacements,
+      imageReplaced
+    } = await rebrandPdf({
+      pdfBuffer,
+      logoBuffer,
+      currentName: oldName,
+      newName,
+      logoMimeType: logoInput.files[0].type
+    });
+
+    messages.push(replacements
+      ? `Updated ${replacements} occurrence${replacements === 1 ? '' : 's'} of the company name.`
+      : 'No occurrences of the current company name were found in the document.');
+    updateStatus();
+
+    messages.push(imageReplaced ? 'Replaced the first detected logo image in the PDF.' : 'No embedded images were replaced.');
+    updateStatus();
+
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const objectUrl = URL.createObjectURL(blob);
+
+    downloadLink.href = objectUrl;
+    downloadLink.download = buildDownloadName(pdfInput.files[0].name, newName);
+    downloadArea.hidden = false;
+    messages.push('Rebranding complete. Download your updated PDF below.');
+    updateStatus();
+  } catch (error) {
+    console.error(error);
+    messages.push(`Error: ${error.message}`);
+    updateStatus();
+  }
+});
+
+function renderStatus(messages) {
+  statusPanel.classList.add('status--visible');
+  statusPanel.innerHTML = '';
+  const list = document.createElement('ul');
+  list.className = 'status__log';
+  messages.forEach((message) => {
+    const item = document.createElement('li');
+    item.textContent = message;
+    list.appendChild(item);
+  });
+  statusPanel.appendChild(list);
+}
+
+function readFileAsArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Unable to read the selected file.'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function buildDownloadName(originalName, brandName) {
+  const base = originalName.replace(/\.pdf$/i, '');
+  const sanitizedBrand = brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return `${base}-${sanitizedBrand || 'rebranded'}.pdf`;
+}
+
+async function rebrandPdf({ pdfBuffer, logoBuffer, currentName, newName, logoMimeType }) {
+  if (typeof PDFLib === 'undefined') {
+    throw new Error('The PDF processing tools failed to load. Please refresh the page and try again.');
+  }
+
+  const logoBytes = new Uint8Array(logoBuffer);
+  const pdfBytes = new Uint8Array(pdfBuffer);
+  const logoBytes = new Uint8Array(logoBuffer);
+  const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+
+  const replacements = replaceContentStreams({ pdfDoc, currentName, newName });
+  const imageReplaced = await replaceFirstImageStream({ pdfDoc, logoBytes, logoMimeType });
+  const updatedPdfBytes = await pdfDoc.save();
+
+  return {
+    pdfBytes: updatedPdfBytes,
+    replacements,
+    imageReplaced
+  };
+}
+
+function detectCompanyName({ pdfDoc }) {
+  const decoder = new TextDecoder('utf-8');
+  const candidatePattern = /([A-Za-z][A-Za-z0-9&'.-]*(?:\s+[A-Za-z][A-Za-z0-9&'.-]*){0,3})/g;
+  const stopWords = new Set(['the', 'and', 'with', 'from', 'project', 'section', 'page', 'document', 'company', 'client', 'sheet']);
+  const candidates = new Map();
+
+  for (const [, object] of pdfDoc.context.enumerateIndirectObjects()) {
+    if (!(object instanceof PDFLib.PDFStream)) {
+      continue;
+    }
+
+    const subtype = object.dict.get(PDFLib.PDFName.of('Subtype'));
+    if (subtype && subtype.toString() === '/Image') {
+      continue;
+    }
+
+    let decoded;
+    try {
+      decoded = object.decode();
+    } catch (error) {
+      continue;
+    }
+
+    let text;
+    try {
+      text = decoder.decode(decoded);
+    } catch (error) {
+      continue;
+    }
+
+    const searchable = text
+      .replace(/[\u0000-\u001F]+/g, ' ')
+      .replace(/\s{2,}/g, ' ');
+
+    let match;
+    while ((match = candidatePattern.exec(searchable)) !== null) {
+      const candidate = match[1].trim();
+      if (!isValidCandidate(candidate, stopWords)) {
+        continue;
+      }
+
+      const normalizedCandidate = candidate.replace(/\s+/g, ' ');
+      const key = normalizedCandidate.toLowerCase();
+      const weight = computeCandidateWeight(normalizedCandidate);
+
+      if (candidates.has(key)) {
+        const entry = candidates.get(key);
+        entry.count += 1;
+        entry.weight = Math.max(entry.weight, weight);
+        if (normalizedCandidate.length > entry.text.length) {
+          entry.text = normalizedCandidate;
+        }
+      } else {
+        candidates.set(key, {
+          text: normalizedCandidate,
+          count: 1,
+          weight
+        });
+      }
+    }
+
+    candidatePattern.lastIndex = 0;
+  }
+
+  const ranked = Array.from(candidates.values())
+    .map((entry) => ({
+      ...entry,
+      score: entry.count * 12 + entry.weight
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  if (!ranked.length) {
+    return null;
+  }
+
+  const repeated = ranked.find((entry) => entry.count > 1);
+  return (repeated || ranked[0]).text;
+}
+
+function isValidCandidate(value, stopWords) {
+  const cleaned = value.replace(/\s+/g, ' ').trim();
+  if (cleaned.length < 3 || cleaned.length > 60) {
+    return false;
+  }
+  if (!/[A-Za-z]/.test(cleaned)) {
+    return false;
+  }
+  if (!/[A-Z]/.test(cleaned)) {
+    return false;
+  }
+  if (/^[A-Za-z]{1,3}$/.test(cleaned)) {
+    return false;
+  }
+
+  const lower = cleaned.toLowerCase();
+  if (stopWords.has(lower)) {
+    return false;
+  }
+
+  const words = cleaned.split(/\s+/);
+  if (words.length === 1 && cleaned.length < 6 && !/[-&]/.test(cleaned)) {
+    return false;
+  }
+
+  return true;
+}
+
+function computeCandidateWeight(value) {
+  const words = value.split(/\s+/);
+  const uppercaseWords = words.filter((word) => /^[A-Z0-9&'.-]+$/.test(word));
+  const capitalizedWords = words.filter((word) => /^[A-Z]/.test(word));
+  const characterScore = Math.min(40, value.replace(/\s+/g, '').length);
+  return uppercaseWords.length * 12 + capitalizedWords.length * 6 + characterScore + words.length * 4;
+}
+
+function replaceContentStreams({ pdfDoc, currentName, newName }) {
+  const escaped = escapeRegExp(currentName);
+  const searchPattern = new RegExp(escaped, 'g');
+  const decoder = new TextDecoder('utf-8');
+  const encoder = new TextEncoder();
+  let totalReplacements = 0;
+
+  for (const [ref, object] of pdfDoc.context.enumerateIndirectObjects()) {
+    if (!(object instanceof PDFLib.PDFStream)) {
+      continue;
+    }
+
+    const subtype = object.dict.get(PDFLib.PDFName.of('Subtype'));
+    if (subtype && subtype.toString() === '/Image') {
+      continue;
+    }
+
+    let decoded;
+    try {
+      decoded = object.decode();
+    } catch (error) {
+      continue;
+    }
+
+    let text;
+    try {
+      text = decoder.decode(decoded);
+    } catch (error) {
+      continue;
+    }
+
+    const matches = text.match(searchPattern);
+    if (!matches) {
+      searchPattern.lastIndex = 0;
+      continue;
+    }
+
+    totalReplacements += matches.length;
+    const updatedText = text.replace(searchPattern, newName);
+    searchPattern.lastIndex = 0;
+    const encoded = encoder.encode(updatedText);
+    const stream = createRawStream({ context: pdfDoc.context, template: object, contents: encoded, removeFilters: true });
+    pdfDoc.context.assign(ref, stream);
+  }
+
+  return totalReplacements;
+}
+
+async function replaceFirstImageStream({ pdfDoc, logoBytes, logoMimeType }) {
+  const embeddedLogo = await embedLogo({ pdfDoc, logoBytes, logoMimeType });
+  if (!embeddedLogo) {
+    return false;
+  }
+
+  const { stream: logoStream, ref: logoRef } = embeddedLogo;
+  const logoContents = extractStreamContents(logoStream);
+  const logoTemplate = createRawStream({ context: pdfDoc.context, template: logoStream, contents: logoContents });
+  let replaced = false;
+
+  for (const [ref, object] of pdfDoc.context.enumerateIndirectObjects()) {
+    if (!(object instanceof PDFLib.PDFStream)) {
+      continue;
+    }
+
+    const subtype = object.dict.get(PDFLib.PDFName.of('Subtype'));
+    if (subtype && subtype.toString() === '/Image') {
+      pdfDoc.context.assign(ref, logoTemplate);
+      replaced = true;
+      break;
+    }
+  }
+
+  pdfDoc.context.delete(logoRef);
+  return replaced;
+}
+
+async function embedLogo({ pdfDoc, logoBytes, logoMimeType }) {
+  try {
+    const mimeType = normalizeMimeType(logoMimeType);
+    let image;
+    if (mimeType === 'image/png') {
+      image = await pdfDoc.embedPng(logoBytes);
+    } else {
+      image = await pdfDoc.embedJpg(logoBytes);
+    }
+
+    const stream = pdfDoc.context.lookup(image.ref);
+    if (!(stream instanceof PDFLib.PDFStream)) {
+      return null;
+    }
+
+    return {
+      ref: image.ref,
+      stream
+    };
+  } catch (error) {
+    console.error(error);
+    throw new Error('Unable to process the uploaded logo image.');
+  }
+}
+
+function normalizeMimeType(type) {
+  if (type === 'image/png' || type === 'image/jpeg') {
+    return type;
+  }
+  if (type === 'image/jpg') {
+    return 'image/jpeg';
+  }
+  return 'image/png';
+}
+
+function createRawStream({ context, template, contents, removeFilters = false }) {
+  const normalizedContents = toUint8Array(contents);
+  const dict = template.dict.clone(context);
+  dict.set(PDFLib.PDFName.of('Length'), PDFLib.PDFNumber.of(normalizedContents.length));
+  if (removeFilters) {
+    dict.delete(PDFLib.PDFName.of('Filter'));
+    dict.delete(PDFLib.PDFName.of('DecodeParms'));
+  }
+  return PDFLib.PDFRawStream.of(dict, normalizedContents);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractStreamContents(stream) {
+  if (stream && typeof stream.getContents === 'function') {
+    return stream.getContents();
+  }
+  if (stream && stream.contents) {
+    return stream.contents;
+  }
+  return new Uint8Array();
+}
+
+function toUint8Array(value) {
+  if (value instanceof Uint8Array) {
+    return value;
+  }
+  if (value instanceof ArrayBuffer) {
+    return new Uint8Array(value);
+  }
+  if (ArrayBuffer.isView(value)) {
+    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  }
+  return new Uint8Array();
+}
