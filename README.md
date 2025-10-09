@@ -35,6 +35,8 @@ Most modern websites restrict cross-origin scraping. If the app can’t read the
 Because there’s no build step, deployment is as easy as serving the static files:
 
 - **GitHub Pages** – Run `npm run build` (or `node scripts/build-docs.mjs`) to copy the latest assets into `docs/`, commit, and point Pages to that folder. The build script now drops matching `404.html` and `.nojekyll` files in both the repository root and `docs/`, and the fallback page automatically redirects project pages back to the correct base path instead of GitHub’s default 404 screen.
+- **GitHub Pages** – Run `npm run build` (or `node scripts/build-docs.mjs`) to copy the latest assets into `docs/`, commit, and point Pages to that folder. The build script now drops a matching `404.html` and `.nojekyll` file so Pages will always fall back to the app shell instead of the default 404 screen.
+- **GitHub Pages** – Run `npm run build` (or `node scripts/build-docs.mjs`) to copy the latest assets into `docs/`, commit, and point Pages to that folder.
 - **Netlify / Vercel / Cloudflare Pages** – Import the repo, use “no build command,” and set the output directory to `.` (or `docs/` if you prefer the Pages layout).
 - **Any static host** – Upload the root directory contents as-is.
 
@@ -52,3 +54,55 @@ Saved brand systems live in `localStorage` under the key `brand-vision-library-v
 
 - `npm start` – Runs `npx serve .` for a zero-config local preview.
 - `npm run build` – Copies `index.html`, `styles.css`, and `script.js` into `docs/` with relative asset paths so GitHub Pages can host the latest build.
+# New PDF App
+
+This project is a static web application that lets you upload a PDF, automatically detect the existing company name, provide a replacement name and logo, and download the rebranded result.
+This project is a static web application that lets you upload a PDF, specify the current and replacement company names, provide a new logo, and download the rebranded result.
+
+## Local Development
+
+Because everything runs in the browser you only need a static file server:
+
+1. Install dependencies (optional): `npm install` (only required if you want to use the `npm start` helper that launches a local server with `serve`).
+2. Start a local server in the project root:
+   - With npm: `npm start`
+   - Or with Python: `python -m http.server 8000`
+3. Open the printed URL (for example `http://localhost:8000/index.html`) to use the app.
+
+## Hosting Options
+
+You can deploy the site anywhere that serves static files. A few popular choices:
+
+### GitHub Pages
+1. Push this repository to GitHub.
+2. Run `npm run build` (or `node scripts/build-docs.mjs`) to copy the latest assets into the `docs/` folder that GitHub Pages can serve.
+3. Commit the generated `docs/` files.
+4. In the repository settings, enable GitHub Pages and choose the `main` branch `docs/` folder as the publishing source.
+5. GitHub will publish the static site at `https://<username>.github.io/<repo>/`.
+
+> **Tip:** If you prefer to publish directly from the repository root instead of `docs/`, change the Pages source accordingly and skip step 2—the same files at the project root work either way.
+
+### Netlify
+1. Create a new Netlify site and connect it to your GitHub repository, or drag-and-drop the project folder into Netlify Drop.
+2. Set the build command to `none` and the publish directory to the repository root (or to `.`).
+3. Deploy and Netlify will give you a live preview URL.
+
+### Vercel
+1. Run `vercel` from the project directory or import the repo in the Vercel dashboard.
+2. When prompted for the project configuration, choose `Other` framework with no build command and set the output directory to `.`.
+3. Deploy to get a live preview link and optional production domain.
+
+Any static hosting provider (e.g., Cloudflare Pages, AWS S3 + CloudFront) works as long as it can serve the files in this repository.
+
+## Troubleshooting
+
+- **Seeing “File not found” on GitHub Pages?** Ensure the Pages source is set to the `docs/` folder (after running `npm run build`) or to the repository root. The published URL will be `https://<username>.github.io/<repo>/`. Visiting the domain root (`https://<username>.github.io/`) without the repo name will result in a 404.
+- **Getting “The PDF processing tools failed to load”?** The app now attempts to download `pdf-lib` from two different CDNs. If both fail—most commonly because of a blocked network request—the form is disabled and a notice appears beneath the hero copy. Check your network or configure your hosting provider to allow requests to the CDN domains, then refresh. As a last resort, download `pdf-lib.min.js` and serve it locally (see below).
+- **Current name not detected?** The app analyses textual content streams to infer the existing brand. If detection comes up empty you’ll see a manual entry field—type the original company name there so the replacement can continue. For best results make sure the brand appears consistently as selectable text (not just as part of images).
+
+## Notes
+
+The in-browser PDF manipulation relies on the client device for processing, so hosting only needs to deliver the static assets—no server-side code is required.
+
+The interface loads [`pdf-lib`](https://github.com/Hopding/pdf-lib) from a CDN at runtime. The loader tries jsDelivr first and falls back to unpkg; if you plan to run the site without internet access, download `pdf-lib.min.js` and update `index.html` (and `docs/index.html`) to point to your copy.
+The interface loads [`pdf-lib`](https://github.com/Hopding/pdf-lib) from a CDN at runtime. If you plan to run the site without internet access, download that script locally and update `index.html` to point to your copy.
