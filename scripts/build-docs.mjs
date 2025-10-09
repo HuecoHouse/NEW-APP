@@ -47,6 +47,9 @@ async function createFallbackPage() {
   await writeFile(fallbackPath, fallbackHtml, 'utf8');
 }
 
+  console.log(`Copied ${filesToCopy.length} assets into docs/ for GitHub Pages.`);
+}
+
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
