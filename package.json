@@ -1,4 +1,7 @@
 {
+  "name": "brand-vision-studio",
+  "version": "1.0.0",
+  "description": "Glassmorphism-inspired web app that generates AI-guided brand systems from any public URL.",
   "name": "new-pdf-app",
   "version": "1.0.0",
   "description": "Static web app for rebranding PDF documents by swapping company names and logos.",

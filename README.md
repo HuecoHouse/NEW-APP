@@ -34,6 +34,7 @@ Most modern websites restrict cross-origin scraping. If the app can’t read the
 
 Because there’s no build step, deployment is as easy as serving the static files:
 
+- **GitHub Pages** – Run `npm run build` (or `node scripts/build-docs.mjs`) to copy the latest assets into `docs/`, commit, and point Pages to that folder. The build script now drops matching `404.html` and `.nojekyll` files in both the repository root and `docs/`, and the fallback page automatically redirects project pages back to the correct base path instead of GitHub’s default 404 screen.
 - **GitHub Pages** – Run `npm run build` (or `node scripts/build-docs.mjs`) to copy the latest assets into `docs/`, commit, and point Pages to that folder. The build script now drops a matching `404.html` and `.nojekyll` file so Pages will always fall back to the app shell instead of the default 404 screen.
 - **GitHub Pages** – Run `npm run build` (or `node scripts/build-docs.mjs`) to copy the latest assets into `docs/`, commit, and point Pages to that folder.
 - **Netlify / Vercel / Cloudflare Pages** – Import the repo, use “no build command,” and set the output directory to `.` (or `docs/` if you prefer the Pages layout).
