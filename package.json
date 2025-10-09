@@ -1,0 +1,10 @@
+{
+  "name": "brand-vision-studio",
+  "version": "1.0.0",
+  "description": "Glassmorphism-inspired web app that generates AI-guided brand systems from any public URL.",
+  "private": true,
+  "scripts": {
+    "start": "npx serve .",
+    "build": "node scripts/build-docs.mjs"
+  }
+}
