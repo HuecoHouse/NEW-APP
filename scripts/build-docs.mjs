@@ -111,6 +111,25 @@ async function createFallbackPage(baseDir) {
   await writeFile(fallbackPath, fallbackHtml, 'utf8');
 }
 
+  await createFallbackPage();
+  await writeFile(join(docsDir, '.nojekyll'), '');
+  console.log(`Copied ${filesToCopy.length} assets into docs/ for GitHub Pages.`);
+}
+
+async function createFallbackPage() {
+  const indexPath = join(docsDir, 'index.html');
+  const fallbackPath = join(docsDir, '404.html');
+  const html = await readFile(indexPath, 'utf8');
+  const fallbackHtml = html.replace(
+    '</head>',
+    '  <meta http-equiv="refresh" content="0; url=./" />\n</head>'
+  );
+  await writeFile(fallbackPath, fallbackHtml, 'utf8');
+}
+
+  console.log(`Copied ${filesToCopy.length} assets into docs/ for GitHub Pages.`);
+}
+
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
