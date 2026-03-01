@@ -2,336 +2,121 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Brand Vision Studio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexo Werks AI Marketing Engine</title>
+    <meta
+      name="description"
+      content="Nexo Werks helps marketing teams launch higher-converting funnels with AI personas, messaging, and workflows inspired by leading AI growth platforms."
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app-shell">
-      <header class="topline">
-        <span class="badge">Brand Vision Studio · Rev&nbsp;3.0</span>
-        <h1 class="title">Reimagine any brand in seconds.</h1>
-        <p class="subtitle">
-          Paste a website URL and explore AI-assisted strategy, identity, and storytelling — wrapped in a calm, responsive workspace.
+    <header class="site-header">
+      <a class="brand" href="#">Nexo Werks</a>
+      <nav>
+        <a href="#product">Product</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#results">Results</a>
+      </nav>
+      <button class="btn btn--small">Book a demo</button>
+    </header>
+
+    <main>
+      <section class="hero" id="product">
+        <p class="eyebrow">AI marketing OS for growth teams</p>
+        <h1>Build marketing funnels that convert like your top performer—every time.</h1>
+        <p class="hero-copy">
+          Nexo Werks combines AI audience research, conversion copywriting, and journey automation into one
+          marketing engine. Launch campaigns faster and optimize continuously.
         </p>
-      </header>
-
-      <main class="workspace" aria-live="polite">
-        <section class="panel intake" aria-labelledby="intake-heading">
-          <h2 id="intake-heading">Input</h2>
-          <form id="analysis-form" autocomplete="off">
-            <label class="field" for="source-url">
-              <span>Website URL</span>
-              <input
-                id="source-url"
-                name="source-url"
-                type="url"
-                inputmode="url"
-                placeholder="https://example.com"
-                required
-              />
-            </label>
-
-            <fieldset class="toggles" aria-label="Generation options">
-              <label class="toggle">
-                <input type="checkbox" name="include-logos" checked />
-                <span>Logo concepts</span>
-              </label>
-              <label class="toggle">
-                <input type="checkbox" name="include-assets" checked />
-                <span>Asset ideas</span>
-              </label>
-              <label class="toggle">
-                <input type="checkbox" name="include-voice" checked />
-                <span>Voice &amp; messaging</span>
-              </label>
-            </fieldset>
-
-            <button type="submit" class="generate">Generate brand system</button>
-          </form>
-        </section>
-
-        <section class="panel results" aria-labelledby="results-heading">
-          <div class="results-header">
-            <h2 id="results-heading">Results</h2>
-            <p class="status" id="results-status">Waiting for input…</p>
-          </div>
-          <div class="results-grid" id="results-grid"></div>
-        </section>
-      </main>
-    </div>
-
-    <div class="soundtrack" aria-live="polite">
-      <div class="soundtrack-body">
-        <div class="soundtrack-meta">
-          <span class="soundtrack-label">Focus playlist</span>
-          <span class="soundtrack-title" id="track-title">Sunrise Sketch</span>
+        <div class="hero-cta">
+          <button class="btn">Start free strategy session</button>
+          <a href="#how-it-works" class="text-link">See the workflow</a>
         </div>
-        <div class="soundtrack-controls">
-          <button class="player-btn" id="prev-btn" aria-label="Previous track">&#9664;</button>
-          <button class="player-btn primary" id="play-toggle" aria-label="Play or pause">&#9658;</button>
-          <button class="player-btn" id="next-btn" aria-label="Next track">&#9654;</button>
-        </div>
-      </div>
-      <audio id="soundtrack-audio" preload="none"></audio>
-    </div>
 
-    <template id="result-card-template">
-      <article class="result-card">
-        <div class="card-head">
-          <h3 class="card-title"></h3>
-          <div class="card-actions">
-            <button type="button" class="card-action" data-action="expand">Expand</button>
-            <button type="button" class="card-action" data-action="regenerate">Regenerate</button>
+        <div class="hero-card" aria-live="polite">
+          <p class="hero-card__label">Campaign focus</p>
+          <h2 id="campaign-focus">B2B SaaS lead generation</h2>
+          <div class="chip-row">
+            <button class="chip is-active" data-focus="B2B SaaS lead generation">B2B SaaS</button>
+            <button class="chip" data-focus="Ecommerce customer retention">Ecommerce</button>
+            <button class="chip" data-focus="Local service appointment growth">Local services</button>
           </div>
         </div>
-        <p class="card-summary"></p>
-        <ul class="card-list"></ul>
-      </article>
-    </template>
+      </section>
 
-    <dialog id="modal" aria-modal="true">
-      <div class="modal-content">
-        <button class="modal-close" aria-label="Close">&times;</button>
-        <div class="modal-body"></div>
-      </div>
-    </dialog>
-
-    <script src="script.js" type="module"></script>
-  </body>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Brand Vision Studio</title>
-  <link rel="stylesheet" href="styles.css" />
-  <title>Rebrand PDF</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script>
-    (function loadPdfLib() {
-      const sources = [
-        'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',
-        'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js'
-      ];
-
-      const loadScript = (src) => new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.async = false;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error(`Failed to load pdf-lib from ${src}`));
-        document.head.appendChild(script);
-      });
-
-      if (!sources.length) {
-        window.pdfLibReady = Promise.reject(new Error('No PDF-lib sources provided.'));
-        return;
-      }
-
-      let promise = loadScript(sources[0]);
-
-      for (let index = 1; index < sources.length; index += 1) {
-        const source = sources[index];
-        promise = promise.catch((error) => {
-          console.warn(error.message);
-          return loadScript(source);
-        });
-      }
-
-      window.pdfLibReady = promise.catch((error) => {
-        console.error('Unable to load the pdf-lib library from any source.', error);
-        throw error;
-      });
-    }());
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" integrity="sha384-0l9KoU3zD+8eUjl/cQisVIt9uZT5vK8w4bJiYVkQglNgB+M6KsOEKLUWwPRwZjlS" crossorigin="anonymous"></script>
-  <script defer src="script.js"></script>
-</head>
-<body>
-  <main class="app">
-    <header class="app__header">
-      <div class="app__topline">
-        <h1>Brand Vision Studio</h1>
-        <span class="app__revision" aria-label="Revision number">Rev 2.3</span>
-      </div>
-      <p>
-        Drop in a website URL and let the AI studio surface a complete brand system—colors, fonts, assets,
-        and messaging—ready for you to refine and regenerate.
-        <span class="app__revision" aria-label="Revision number">Rev 2.1</span>
-      </div>
-      <p>
-        Drop in a website URL and let the AI studio surface a complete brand system—colors, fonts, assets,
-        and messaging—ready for you to refine, regenerate, and save.
-      </p>
-      <p id="toolkit-error" class="app__notice" role="alert" hidden>
-        We couldn’t analyze that site automatically. Double-check the URL or use a CORS-friendly proxy before trying again.
-      </p>
-    </header>
-
-    <div class="workspace">
-      <form id="analyze-form" class="panel panel--input">
-        <div class="panel__header">
-          <h2>Source</h2>
-          <p>Provide a public URL to inspire the AI-driven brand analysis.</p>
+      <section class="logo-strip" aria-label="Trusted by growth-minded teams">
+        <p>Used by teams scaling with confidence</p>
+        <div>
+          <span>Northbound</span>
+          <span>Peakline</span>
+          <span>Arclytics</span>
+          <span>Studio Nine</span>
+          <span>Cloudframe</span>
         </div>
+      </section>
 
-        <label class="field" for="url-input">
-          <span>Website URL</span>
-          <input type="url" id="url-input" name="url" placeholder="https://example.com" required autocomplete="url" />
-        </label>
-
-        <div class="field field--inline">
-          <label class="toggle" for="include-assets">
-            <input type="checkbox" id="include-assets" name="includeAssets" checked />
-            <span>Generate asset concepts</span>
-          </label>
-          <label class="toggle" for="include-voice">
-            <input type="checkbox" id="include-voice" name="includeVoice" checked />
-            <span>Include brand voice</span>
-          </label>
-        </div>
-
-        <div class="panel__section" aria-labelledby="spotify-setup-heading">
-          <div class="panel__section-header">
-            <h3 id="spotify-setup-heading">Spotify API setup</h3>
-            <p>Register a redirect URI so Spotify can hand users back to Brand Vision Studio.</p>
-          </div>
-
-          <label class="field" for="spotify-redirect">
-            <span>Redirect URI</span>
-            <input
-              type="url"
-              id="spotify-redirect"
-              name="spotifyRedirect"
-              placeholder="https://yourdomain.com/spotify-callback"
-              autocomplete="off"
-              inputmode="url"
-            />
-          </label>
-
-          <div class="panel__section-actions">
-            <button type="button" class="button button--subtle" id="spotify-use-current">Use this site’s callback</button>
-          </div>
-
-          <p id="spotify-status" class="panel__support" aria-live="polite">
-            Add the exact redirect URI you register in the Spotify dashboard. We’ll validate it here for you.
+      <section class="grid" id="how-it-works">
+        <article>
+          <h3>1. Know your best buyers</h3>
+          <p>
+            Our AI maps motivations, objections, and language patterns from your site, CRM exports, and ad
+            performance.
           </p>
-        </div>
-
-        <button type="submit" class="button button--primary">Generate Brand System</button>
-        <p id="status" class="panel__status" aria-live="polite"></p>
-      </form>
-
-      <section id="analysis" class="panel panel--results" hidden>
-        <div class="panel__header">
-          <h2>Brand System</h2>
-          <p id="analysis-subtitle">Results generated with contextual AI heuristics.</p>
-        </div>
-        <div id="analysis-content" class="results"></div>
+        </article>
+        <article>
+          <h3>2. Generate conversion-first assets</h3>
+          <p>
+            Instantly create landing pages, ad variants, email flows, and lead magnets tuned to each segment.
+          </p>
+        </article>
+        <article>
+          <h3>3. Automate optimization</h3>
+          <p>
+            Nexo Werks continuously tests headlines, offers, and CTAs, then promotes winners across channels.
+          </p>
+        </article>
       </section>
-    </div>
-  </main>
-  <aside class="floating-player" id="floating-player" hidden>
-    <button class="floating-player__collapse" id="player-collapse" aria-expanded="true" type="button">
-      <span aria-hidden="true">Soundtrack</span>
-      <span class="sr-only">Toggle soundtrack player</span>
-    </button>
-    <div class="floating-player__body">
-      <div class="floating-player__now">
-        <p class="floating-player__label">Brand soundtrack</p>
-        <h3 class="floating-player__title" id="player-title">Select a track</h3>
-        <p class="floating-player__artist" id="player-artist">We’ll cue up ambient inspiration for each brand.</p>
-        <p class="floating-player__mood" id="player-mood"></p>
-      </div>
-      <div class="floating-player__controls">
-        <button type="button" data-player-action="prev" aria-label="Previous track">&#9664;</button>
-        <button type="button" data-player-action="toggle" aria-label="Play or pause">&#9654;</button>
-        <button type="button" data-player-action="next" aria-label="Next track">&#9654;&#9654;</button>
-      </div>
-      <progress id="player-progress" class="floating-player__progress" value="0" max="1"></progress>
-      <ul class="floating-player__queue" id="player-queue" aria-live="polite"></ul>
-    </div>
-  </aside>
-        <div class="panel__footer">
-          <button id="save-analysis" class="button button--ghost" type="button">Store in Library</button>
+
+      <section class="results" id="results">
+        <h2>Marketing outcomes your team can feel in weeks, not quarters.</h2>
+        <div class="stats">
+          <article>
+            <p class="stat">+37%</p>
+            <p>Average lift in landing page conversion rate</p>
+          </article>
+          <article>
+            <p class="stat">-42%</p>
+            <p>Reduction in campaign production time</p>
+          </article>
+          <article>
+            <p class="stat">2.6x</p>
+            <p>More qualified meetings booked from paid traffic</p>
+          </article>
         </div>
       </section>
 
-      <section class="panel panel--library">
-        <div class="panel__header">
-          <h2>Library</h2>
-          <p>Catalog every exploration and revisit it anytime.</p>
-          <label class="field field--compact" for="library-search">
-            <span class="sr-only">Search saved brands</span>
-            <input type="search" id="library-search" placeholder="Search saved brands" autocomplete="off" />
-          </label>
-        </div>
-        <ul id="library-list" class="library" aria-live="polite"></ul>
-      </section>
-    </div>
-        <h1>Rebrand PDF</h1>
-        <span class="app__revision" aria-label="Revision number">Rev 1.4</span>
-      </div>
-      <p>Swap an existing brand name and logo throughout a PDF with your updated identity.</p>
-      <p id="pdf-lib-error" class="app__notice" role="alert" hidden>
-        We couldn’t load the PDF processing tools. Check your connection and refresh the page to try again.
-      </p>
-        <span class="app__revision" aria-label="Revision number">Rev 1.1</span>
-      </div>
-      <p>Swap an existing brand name and logo throughout a PDF with your updated identity.</p>
-    </header>
-
-    <form id="rebrand-form" class="form">
-      <section class="form__group">
-        <label for="pdf-input">Source PDF</label>
-        <input type="file" id="pdf-input" accept="application/pdf" required />
+      <section class="quote">
+        <blockquote>
+          “Nexo Werks gave us a complete marketing system, not just generated copy. We replaced guesswork with
+          a repeatable pipeline that keeps improving.”
+        </blockquote>
+        <p>— Maya Chen, VP Growth at Cloudframe</p>
       </section>
 
-      <div id="detected-brand" class="form__detected" data-state="idle" aria-live="polite" aria-atomic="true">
-        <span class="form__detected-label">Detected brand</span>
-        <span class="form__detected-value" id="detected-brand-value">Select a PDF to begin.</span>
-      </div>
-
-      <section id="manual-brand" class="form__group form__group--manual" hidden>
-        <label for="manual-brand-input">Current Company Name</label>
-        <input type="text" id="manual-brand-input" placeholder="Enter the existing company name" autocomplete="organization" />
-        <p class="form__hint">We couldn’t detect the original brand. Provide it manually to continue.</p>
+      <section class="final-cta">
+        <h2>Turn your brand into a predictable growth machine.</h2>
+        <p>Get a personalized AI marketing blueprint for Nexo Werks in a 30-minute session.</p>
+        <button class="btn">Get my blueprint</button>
       </section>
+    </main>
 
-      <section class="form__group">
-        <label for="new-name">New Company Name</label>
-        <input type="text" id="new-name" placeholder="e.g. Dynamic Metals" required />
-      <section class="form__split">
-        <div class="form__group">
-          <label for="current-name">Current Company Name</label>
-          <input type="text" id="current-name" placeholder="e.g. Old Brand Co." required />
-        </div>
-        <div class="form__group">
-          <label for="new-name">New Company Name</label>
-          <input type="text" id="new-name" placeholder="e.g. New Brand Labs" required />
-        </div>
-      </section>
-
-      <section class="form__group">
-        <label for="logo-input">Replacement Logo</label>
-        <input type="file" id="logo-input" accept="image/*" required />
-        <p class="form__hint">Upload a PNG or JPEG. The first logo image found in the PDF will be replaced.</p>
-      </section>
-
-      <button type="submit" class="form__submit">Generate Updated PDF</button>
-    </form>
-
-    <section id="status" class="status" aria-live="polite"></section>
-
-    <section id="download-area" class="download" hidden>
-      <h2>Download</h2>
-      <a id="download-link" class="download__button" download="rebranded.pdf">Save Rebranded PDF</a>
-    </section>
-  </main>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>
